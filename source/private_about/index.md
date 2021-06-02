@@ -1,9 +1,5 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 
----
-iOS: 陈栋1
----
-
 # 联系方式
 - 手机：15618297898
 - Email：chendong0040@sina.com / 1107661983@qq.com
