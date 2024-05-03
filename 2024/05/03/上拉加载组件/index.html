@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>上拉加载组件 | my blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="flutter中有个很好用的Sliver CupertinoSliverRefreshControl，但是没有提供对应的上拉组件，三方库中有不少不错的支持的刷新组件，比如flutter_easy_refresh。但是基本是需要再滚动视图外包上一个另外的监听组件,似乎没有以Sliver方式实现的简单的上拉组件，所以我按照CupertinoSliverRefreshControl的实现原理，简单实现一">
+<meta property="og:type" content="article">
+<meta property="og:title" content="上拉加载组件">
+<meta property="og:url" content="http://example.com/2024/05/03/%E4%B8%8A%E6%8B%89%E5%8A%A0%E8%BD%BD%E7%BB%84%E4%BB%B6/index.html">
+<meta property="og:site_name" content="my blog">
+<meta property="og:description" content="flutter中有个很好用的Sliver CupertinoSliverRefreshControl，但是没有提供对应的上拉组件，三方库中有不少不错的支持的刷新组件，比如flutter_easy_refresh。但是基本是需要再滚动视图外包上一个另外的监听组件,似乎没有以Sliver方式实现的简单的上拉组件，所以我按照CupertinoSliverRefreshControl的实现原理，简单实现一">
+<meta property="og:locale">
+<meta property="article:published_time" content="2024-05-03T03:28:28.000Z">
+<meta property="article:modified_time" content="2024-05-03T14:45:43.043Z">
+<meta property="article:author" content="chdo002">
+<meta property="article:tag" content="flutter">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="my blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<meta name="generator" content="Hexo 7.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">my blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Suche"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Suche"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-上拉加载组件" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2024/05/03/%E4%B8%8A%E6%8B%89%E5%8A%A0%E8%BD%BD%E7%BB%84%E4%BB%B6/" class="article-date">
+  <time class="dt-published" datetime="2024-05-03T03:28:28.000Z" itemprop="datePublished">2024-05-03</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      上拉加载组件
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>flutter中有个很好用的Sliver <code>CupertinoSliverRefreshControl</code>，但是没有提供对应的上拉组件，三方库中有不少不错的支持的刷新组件，比如<a target="_blank" rel="noopener" href="https://github.com/xuelongqy/flutter_easy_refresh">flutter_easy_refresh</a>。但是基本是需要再滚动视图外包上一个另外的监听组件,似乎没有以Sliver方式实现的简单的上拉组件，所以我按照<code>CupertinoSliverRefreshControl</code>的实现原理，简单实现一个上拉sliver<a target="_blank" rel="noopener" href="https://github.com/chdo002/load_more?tab=readme-ov-file">组件</a>。</p>
+<h2 id="CupertinoSliverRefreshControl实现原理"><a href="#CupertinoSliverRefreshControl实现原理" class="headerlink" title="CupertinoSliverRefreshControl实现原理"></a><code>CupertinoSliverRefreshControl</code>实现原理</h2><h3 id="先回顾下Sliver的布局逻辑"><a href="#先回顾下Sliver的布局逻辑" class="headerlink" title="先回顾下Sliver的布局逻辑:"></a>先回顾下Sliver的布局逻辑:</h3><p>1、Viewport 将当前布局和配置信息通过 SliverConstraints 传递给 Sliver。<br>2、Sliver 确定自身的位置、绘制等信息，保存在 geometry 中（一个 SliverGeometry 类型的对象）。<br>3、Viewport 读取 geometry 中的信息来对 Sliver 进行布局和绘制。</p>
+<p>而该段逻辑主要在RenderSliver的<code>performLayout</code>方法中，需要用到<code>SliverConstraints</code>的如下几个属性</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">class SliverConstraints extends Constraints &#123;</span><br><span class="line">    //当前Sliver理论上（可能会固定在顶部）已经滑出可视区域的总偏移</span><br><span class="line">    double? scrollOffset;</span><br><span class="line">    //上一个 sliver 覆盖当前 sliver 的长度（重叠部分的长度），通常在 sliver 是 pinned/floating</span><br><span class="line">    //或者处于列表头时,距离顶部的距离</span><br><span class="line">    double? overlap;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当用户滑动列表，传递给Sliver的约束会不断变化，设置新的geometry和重新布局子组件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">const SliverGeometry(&#123;</span><br><span class="line">  this.scrollExtent = 0.0, // sliver占用主轴的高度，决定Sliver在Viewport可滚动的距离，为0时不影响子组件布局显示，但是不占用滚动高度，比如排列在首尾的Sliver在用户结束滑动时，会回弹出Viewport</span><br><span class="line">  this.paintExtent = 0.0, // 可视区域中的绘制长度，会被传递到Boxcontrains中的minHeight</span><br><span class="line">  this.paintOrigin = 0.0, // 绘制的坐标原点，相对于自身布局位置，小于0时也能生效</span><br><span class="line">  //在 Viewport中占用的长度；如果列表滚动方向是垂直方向，则表示列表高度。主要影响下一个Sliver的位置</span><br><span class="line">  //范围[0,paintExtent]</span><br><span class="line">  double? layoutExtent, </span><br><span class="line">  this.maxPaintExtent = 0.0,//最大绘制长度</span><br><span class="line">  //scrollExtent的修正值：layoutExtent变化后，为了防止sliver突然跳动（应用新的layoutExtent）</span><br><span class="line">  //可以先进行修正，具体的作用在后面 SliverFlexibleHeader 示例中会介绍。</span><br><span class="line">  this.scrollOffsetCorrection,</span><br><span class="line">  ...</span><br><span class="line">&#125;) </span><br></pre></td></tr></table></figure>
+
+<h3 id="CupertinoSliverRefreshControl结构"><a href="#CupertinoSliverRefreshControl结构" class="headerlink" title="CupertinoSliverRefreshControl结构"></a><code>CupertinoSliverRefreshControl</code>结构</h3><p>先看下<code>CupertinoSliverRefreshControl</code>的两个主要组成元素。</p>
+<ul>
+<li><code>CupertinoSliverRefreshControl</code><br>  一个StatefulWidget，他管理的状态就是<code>RefreshIndicatorMode</code>，并通过transitionNextState方法来更新<code>RefreshIndicatorMode</code>。</li>
+<li><code>_CupertinoSliverRefresh</code>是个SingleChildRenderObjectWidget，他接受CupertinoSliverRefreshControl的参数配置，并传递给<code>_RenderCupertinoSliverRefresh</code>。<code>_RenderCupertinoSliverRefresh</code>是个Sliver，他本身不管理刷新状态，只负责根据目前的sliver约束条件和CupertinoSliverRefreshControl的参数配置来布局和绘制。</li>
+</ul>
+<p>通过下面的伪代码，表达下大概是这样的组成方式</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line">CupertinoSliverRefreshControl (refreshIndicatorExtent)&#123;</span><br><span class="line">    // CupertinoSliverRefreshControl的state</span><br><span class="line">    _CupertinoSliverRefreshControlState &#123; // 负责管理刷新状态</span><br><span class="line">        bool _hasLayoutExtent;</span><br><span class="line">        Widget build(context) &#123;</span><br><span class="line">            return _CupertinoSliverRefresh( // 负责绘制刷新组件</span><br><span class="line">                refreshIndicatorExtent:widget.refreshIndicatorExtent, // 刷新组件的指定高度</span><br><span class="line">                hasLayoutExtent:_hasLayoutExtent, // 是否要让子组件常驻显示，默认情况下比如下拉距离不够，子组件还是会回弹的，只有下拉足够距离_hasLayoutExtent才未true</span><br><span class="line">                child:LayoutBuilder(builder:(context,constrain)&#123; // 这里加个LayoutBuilder的目的是为了拿到constrain，</span><br><span class="line">                    latestIndicatorBoxExtent = constraints.maxHeight; // 保存布局高度，据此来判断当前刷新状态</span><br><span class="line">                    refreshState = transitionNextState(); // transitionNextState的大概逻辑是根据latestIndicatorBoxExtent的高度，和之前保存的状态，得出目前的最新状态（更新_hasLayoutExtent），必要时会触发setstate刷新</span><br><span class="line">                    return widget.build(context, refreshState...);</span><br><span class="line">                &#125;)</span><br><span class="line">            );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">_CupertinoSliverRefresh &#123;</span><br><span class="line">    // _CupertinoSliverRefresh的RenderSliver</span><br><span class="line">    _RenderCupertinoSliverRefresh &#123;</span><br><span class="line">        double _refreshIndicatorExtent; // </span><br><span class="line">        bool _hasLayoutExtent; //</span><br><span class="line">        performLayout() &#123;</span><br><span class="line">            // 计算子组件的刷新高度</span><br><span class="line">            final double layoutExtent = (_hasLayoutExtent ? 1.0 : 0.0) * _refreshIndicatorExtent;</span><br><span class="line">            // 判断此时是否需要显示子组件</span><br><span class="line">            final bool active = constraints.overlap &lt; 0.0 || layoutExtent &gt; 0.0;</span><br><span class="line">            </span><br><span class="line">            // 计算子组件的高度</span><br><span class="line">            final double overscrolledExtent = constraints.overlap &lt; 0.0 ? constraints.overlap.abs() : 0.0;</span><br><span class="line">            // 布局子组件</span><br><span class="line">            child!.layout(</span><br><span class="line">              constraints.asBoxConstraints(</span><br><span class="line">                maxExtent: layoutExtent + overscrolledExtent,</span><br><span class="line">              ),</span><br><span class="line">              parentUsesSize: true,</span><br><span class="line">            );</span><br><span class="line">            </span><br><span class="line">            if (active) &#123;</span><br><span class="line">              // 显示子组件的情况，计算当前sliver的布局</span><br><span class="line">              geometry = SliverGeometry(</span><br><span class="line">                scrollExtent: layoutExtent,</span><br><span class="line">                paintOrigin: -overscrolledExtent - constraints.scrollOffset,</span><br><span class="line">                paintExtent: max(</span><br><span class="line">                  max(child!.size.height, layoutExtent) - constraints.scrollOffset,</span><br><span class="line">                  0.0,</span><br><span class="line">                ),</span><br><span class="line">                maxPaintExtent: max(</span><br><span class="line">                  max(child!.size.height, layoutExtent) - constraints.scrollOffset,</span><br><span class="line">                  0.0,</span><br><span class="line">                ),</span><br><span class="line">                layoutExtent: max(layoutExtent - constraints.scrollOffset, 0.0),</span><br><span class="line">              );</span><br><span class="line">            &#125; else &#123;</span><br><span class="line">              // 不显示子组件的情况，直接隐藏，此时不会触发LayoutBuilder的绘制</span><br><span class="line">              geometry = SliverGeometry.zero;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="CupertinoSliverRefreshControl总结"><a href="#CupertinoSliverRefreshControl总结" class="headerlink" title="CupertinoSliverRefreshControl总结"></a><code>CupertinoSliverRefreshControl</code>总结</h3><p>发现<code>CupertinoSliverRefreshControl</code>的逻辑并不复杂，主要通过Sliver的布局变化，触发刷新还是隐藏sliver，其中主要注意点点是：</p>
+<ul>
+<li><code>_CupertinoSliverRefreshControlState</code>中使用了<code>LayoutBuilder</code>，其目的是为了拿到sliver返回的Box布局信息，来判断当前的滚动状态，因为<code>_CupertinoSliverRefresh</code>中并没有给到一个回调机制</li>
+<li>在<code>_CupertinoSliverRefresh</code>中动态修改scrollExtent，其实会引起Viewport的抖动，因为后续的sliver布局都受到自己的高度影响，所以geometry中提供了<code>scrollOffsetCorrection</code>这个修正属性。</li>
+</ul>
+<h2 id="实现一个CupertinoSliverLoadMoreControl"><a href="#实现一个CupertinoSliverLoadMoreControl" class="headerlink" title="实现一个CupertinoSliverLoadMoreControl"></a>实现一个<code>CupertinoSliverLoadMoreControl</code></h2><h3 id="CupertinoSliverLoadMoreControl结构"><a href="#CupertinoSliverLoadMoreControl结构" class="headerlink" title="CupertinoSliverLoadMoreControl结构"></a><code>CupertinoSliverLoadMoreControl</code>结构</h3><p>我们的组件和<code>CupertinoSliverRefreshControl</code>的结构保持一致，尽量不更改使用期望，只是增加了自动加载和预加载的功能。<br>用到的约束条件如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">class SliverConstraints extends Constraints &#123;</span><br><span class="line">    //当前Sliver之前的sliver的滚动高度，肯能是double.infinity</span><br><span class="line">    double precedingScrollExtent;</span><br><span class="line">    //Viewport剩余的绘制距离，相当于最后一个sliver到Viewport底部的距离</span><br><span class="line">    double remainingPaintExtent;</span><br><span class="line">    // viewport 的高度</span><br><span class="line">    double viewportMainAxisExtent;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>另外用到了Viewport的偏移量，从<code>parent</code>中的<code>offset</code>可以读取到，和<code>cacheExtent</code>，表示预加载区或者缓存区，在sliver不在Viewport区域但是在<code>cacheExtent</code>时，任然会回调布局逻辑。</p>
+<p>代码层面的主要修改集中在sliver的<code>performLayout()</code>中</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br></pre></td><td class="code"><pre><span class="line">bool invisible = constraints.precedingScrollExtent &lt;= 0; // 如果前面没有sliver占用空间，认为当前的Viewport是空的，则不显示刷新组件</span><br><span class="line">// 同样，当剩余空间没有了，说明当前sliver已经不在Viewport中，也不需要显示，这里通过小于0.000000001判断，是因为测试中发现，在Viewport向下拉动时，有时候的remainingPaintExtent会变成一个特别小的数字，而且和0交替出现，虽然此时其实应该是0，可能是flutter的bug。</span><br><span class="line">invisible |= (constraints.remainingPaintExtent &lt; 0.000000001);</span><br><span class="line">// 当不展示sliver时，就直接设置为空sliver的布局数据，</span><br><span class="line">if (invisible &amp;&amp; !_autoRefresh) &#123;</span><br><span class="line">  geometry = SliverGeometry.zero;</span><br><span class="line">  child!.layout(</span><br><span class="line">    constraints.asBoxConstraints(maxExtent: 0),</span><br><span class="line">    parentUsesSize: true,</span><br><span class="line">  );</span><br><span class="line">  return;</span><br><span class="line">&#125; else if (invisible &amp;&amp; _autoRefresh) &#123;</span><br><span class="line">  geometry = SliverGeometry.zero;</span><br><span class="line">  child!.layout(</span><br><span class="line">    constraints.asBoxConstraints(maxExtent: 0),</span><br><span class="line">    parentUsesSize: true,</span><br><span class="line">  );</span><br><span class="line"></span><br><span class="line">  // 这里处理自动加载逻辑，</span><br><span class="line">  if (parent is RenderViewport) &#123;</span><br><span class="line">    RenderViewport port = parent as RenderViewport;</span><br><span class="line">    // 这里计算出Viewport的剩余滚动空间，相当于最后一个sliver到Viewport底部的距离，没有使用`remainingPaintExtent`，是因为在这种情况下他的值为0</span><br><span class="line">    final remainScrollExtent = constraints.precedingScrollExtent -</span><br><span class="line">        port.offset.pixels -</span><br><span class="line">        constraints.viewportMainAxisExtent;</span><br><span class="line">    // 理论上这里这里永远会成立，因为`cacheExtent`和`remainScrollExtent`永远相等，只有在进入缓冲区布局时才会布局，但是实际测试发现有还未进入缓冲区就布局的情况。</span><br><span class="line">    if (remainScrollExtent &lt;=</span><br><span class="line">            (port.cacheExtent ??</span><br><span class="line">                RenderAbstractViewport.defaultCacheExtent) &amp;&amp;</span><br><span class="line">        remainScrollExtent &gt; 0) &#123;</span><br><span class="line">      onPreloadZone();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  return;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">double scrollOffsetOfAllSlivers = (parent as RenderViewport).offset.pixels;</span><br><span class="line"></span><br><span class="line">// 这里是有部分sliver占用了空间，但是没有占满Viewport的情况</span><br><span class="line">if (constraints.precedingScrollExtent &lt;</span><br><span class="line">    constraints.viewportMainAxisExtent) &#123;</span><br><span class="line">  if (_autoRefresh &amp;&amp; scrollOffsetOfAllSlivers &gt;= 0) &#123;</span><br><span class="line">    final scrollExtent = (constraints.viewportMainAxisExtent -</span><br><span class="line">        constraints.precedingScrollExtent);</span><br><span class="line">    geometry = SliverGeometry(</span><br><span class="line">      scrollExtent: scrollExtent,</span><br><span class="line">      paintExtent: scrollExtent,</span><br><span class="line">      maxPaintExtent: scrollExtent,</span><br><span class="line">    );</span><br><span class="line">    child!.layout(</span><br><span class="line">      constraints.asBoxConstraints(</span><br><span class="line">          minExtent: 0,</span><br><span class="line">          maxExtent: min(</span><br><span class="line">            constraints.remainingPaintExtent,</span><br><span class="line">            geometry!.maxPaintExtent,</span><br><span class="line">          )),</span><br><span class="line">      parentUsesSize: true,</span><br><span class="line">    );</span><br><span class="line">    return;</span><br><span class="line">  &#125;</span><br><span class="line">  // user pulling down</span><br><span class="line">  if (scrollOffsetOfAllSlivers &lt; 0) &#123;</span><br><span class="line">    geometry = SliverGeometry.zero;</span><br><span class="line">    child!.layout(</span><br><span class="line">      constraints.asBoxConstraints(maxExtent: 0),</span><br><span class="line">      parentUsesSize: true,</span><br><span class="line">    );</span><br><span class="line">    return;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  if (_hasLayoutExtent) &#123;</span><br><span class="line">    var paintOrigin =</span><br><span class="line">        constraints.remainingPaintExtent - scrollOffsetOfAllSlivers;</span><br><span class="line">    var fix = paintOrigin +</span><br><span class="line">        _refreshIndicatorExtent -</span><br><span class="line">        constraints.remainingPaintExtent;</span><br><span class="line">    if (fix &gt; 0) &#123;</span><br><span class="line">      paintOrigin -= fix;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    final painExtent = constraints.remainingPaintExtent - paintOrigin;</span><br><span class="line">    geometry = SliverGeometry(</span><br><span class="line">      scrollExtent: 0,</span><br><span class="line">      paintOrigin: paintOrigin,</span><br><span class="line">      paintExtent: painExtent,</span><br><span class="line">      maxPaintExtent: painExtent,</span><br><span class="line">    );</span><br><span class="line">  &#125; else &#123;</span><br><span class="line">    geometry = SliverGeometry(</span><br><span class="line">      scrollExtent: 0,</span><br><span class="line">      paintOrigin:</span><br><span class="line">          constraints.remainingPaintExtent - scrollOffsetOfAllSlivers,</span><br><span class="line">      paintExtent: scrollOffsetOfAllSlivers,</span><br><span class="line">      maxPaintExtent: scrollOffsetOfAllSlivers,</span><br><span class="line">    );</span><br><span class="line">  &#125;</span><br><span class="line">  child!.layout(</span><br><span class="line">    constraints.asBoxConstraints(</span><br><span class="line">        maxExtent: min(</span><br><span class="line">      constraints.remainingPaintExtent,</span><br><span class="line">      geometry!.maxPaintExtent,</span><br><span class="line">    )),</span><br><span class="line">    parentUsesSize: true,</span><br><span class="line">  );</span><br><span class="line">  return;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 这里处理了sliver即将划入到Viewport的情况，此时`invisible`为false，`remainingPaintExtent`也开始&gt;0，此时只需要判断要不要给子组件滚动空间即刻。</span><br><span class="line">child!.layout(</span><br><span class="line">  constraints.asBoxConstraints(maxExtent: constraints.remainingPaintExtent),</span><br><span class="line">  parentUsesSize: true,</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">final double layoutExtent =</span><br><span class="line">    (_hasLayoutExtent ? 1.0 : 0.0) * _refreshIndicatorExtent;</span><br><span class="line">geometry = SliverGeometry(</span><br><span class="line">  scrollExtent: layoutExtent,</span><br><span class="line">  paintExtent:</span><br><span class="line">      min(_refreshIndicatorExtent, constraints.remainingPaintExtent),</span><br><span class="line">  maxPaintExtent: _refreshIndicatorExtent,</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h3 id="CupertinoSliverLoadMoreControl总结"><a href="#CupertinoSliverLoadMoreControl总结" class="headerlink" title="CupertinoSliverLoadMoreControl总结"></a><code>CupertinoSliverLoadMoreControl</code>总结</h3><p>下拉组件和核心代码说明已经完成，其他部分代码可以查看<a target="_blank" rel="noopener" href="https://github.com/chdo002/load_more?tab=readme-ov-file">仓库</a>，或者试下<a target="_blank" rel="noopener" href="https://chdo002.github.io/projects/load-more/">demo</a>(记得在手机上查看，或者打开移动端调试模式，因为桌面滚动视图不支持弹性滚动overscroll)。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2024/05/03/%E4%B8%8A%E6%8B%89%E5%8A%A0%E8%BD%BD%E7%BB%84%E4%BB%B6/" data-id="clvq47ya00001xiqt3l8ufsp9" data-title="上拉加载组件" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/flutter/" rel="tag">flutter</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Älter</strong>
+      <div class="article-nav-title">NSArrary强引用问题</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/flutter/" rel="tag">flutter</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/http-www-runoob-com-sqlite/" rel="tag">http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rn/" rel="tag">rn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" rel="tag">runtime track 埋点</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shadowsocks/" rel="tag">shadowsocks</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webpack/" rel="tag">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/weex/" rel="tag">weex</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/flutter/" style="font-size: 10px;">flutter</a> <a href="/tags/http-www-runoob-com-sqlite/" style="font-size: 10px;">http://www.runoob.com/sqlite/</a> <a href="/tags/rn/" style="font-size: 10px;">rn</a> <a href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" style="font-size: 10px;">runtime track 埋点</a> <a href="/tags/shadowsocks/" style="font-size: 10px;">shadowsocks</a> <a href="/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/tags/weex/" style="font-size: 10px;">weex</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2024/05/">May 2024</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/02/">February 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/09/">September 2017</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">letzter Beitrag</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2024/05/03/%E4%B8%8A%E6%8B%89%E5%8A%A0%E8%BD%BD%E7%BB%84%E4%BB%B6/">上拉加载组件</a>
+          </li>
+        
+          <li>
+            <a href="/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/">NSArrary强引用问题</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/27/iOS%E5%90%AF%E5%8A%A8%E8%A7%A3%E6%9E%90/">iOS启动解析</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/07/NSNull%E5%AF%BC%E8%87%B4%E7%9A%84%E6%80%A7%E8%83%BD%E4%B8%8B%E9%99%8D/">NSNull导致的性能下降</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/">LeetCode</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2024 chdo002<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

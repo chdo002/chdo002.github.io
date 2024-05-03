@@ -69,6 +69,75 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CoreText笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/04/26/CoreText%E7%AC%94%E8%AE%B0/" class="article-date">
+  <time class="dt-published" datetime="2018-04-26T03:14:30.000Z" itemprop="datePublished">2018-04-26</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/04/26/CoreText%E7%AC%94%E8%AE%B0/">CoreText</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>在CDChatList为了达到页面流畅的效果，用到了coretext，关键点记录如下</p>
+<p>聊天页面卡顿点主要有，计算聊天气泡高度、富文本渲染时的性能消耗太大，这两个可以异步操作，并缓存</p>
+<p>气泡高度的计算一般都是用NSString的boundingRectWithSize: options: attributes: context:方法计算，算出来的结果可以放在消息Model中缓存并可以本地化，这样就只需计算一次。</p>
+<p>富文本渲染有两种方法，UILabel中的attributedText可以复值富文本，但是boundingRectWithSize就不太好用了，而且要考虑到带表情的富文本，所以就得用另一个方法</p>
+<p>⬇️</p>
+<h1 id="CoreText"><a href="#CoreText" class="headerlink" title="CoreText"></a>CoreText</h1><div style="display:inline">首先需要注意的是，<h3 style="display:inline" >Coretext只有C的接口</h3>，所以得手动管理一些c的内存，同时还得了解字体字形相关信息。</div>
+
+<p>UILabel对coretext进行了封装，我们这里直接调用coretext，可以获得不错的性能表现。</p>
+<p>coretext可以实现文本尺寸的计算，文本在子线程绘制，绘制完成后再赋值给view，这样耗时操作都可以不在主线程操作，不影响页面流畅。</p>
+<p>上代码</p>
+<p>首先创建需要显示的富文本，这里可能包含表情，<br>形如: @”呵呵哒，然后来个表情[微笑][骷髅]”,<br>这里的[微笑][骷髅]就是需要被替换成表情图片，先用正则换成空字符占位，等后续图片绘制，绘制部分具体代码可见CDChatList的CDLabel实现</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">NSMutableAttributedString *attString = [[NSMutableAttributedString alloc] initWithString:data.msgString attributes:dic];</span><br><span class="line"></span><br><span class="line">// 先创建framesetter</span><br><span class="line">CTFramesetterRef framesetter = CTFramesetterCreateWithAttributedString((CFAttributedStringRef)attString);</span><br></pre></td></tr></table></figure>
+
+<p>这步计算文本内容范围，猜测boundingRectWithSize也是用的这个方法，入参很像<br>这里的size就是需要缓存的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">CGSize caSize = CTFramesetterSuggestFrameSizeWithConstraints(framesetter, CFRangeMake(0,attString.length), nil, size, nil);</span><br><span class="line"></span><br><span class="line">// 这两步获得需要绘制文本的CGPath和CTFrame</span><br><span class="line">CGPathRef path = CGPathCreateWithRect(CGRectMake(0, 0, caSize.width, caSize.height), NULL);</span><br><span class="line">CTFrameRef frame = CTFramesetterCreateFrame(framesetter,CFRangeMake(0, [attString length]), path, NULL);</span><br><span class="line"></span><br><span class="line">// 注意需要释放内存</span><br><span class="line">CFRelease(framesetter);</span><br><span class="line">CFRelease(path);</span><br></pre></td></tr></table></figure>
+
+
+<p>渲染展示内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">UIGraphicsBeginImageContextWithOptions(caSize, NO, 0);</span><br><span class="line">CGContextRef context = UIGraphicsGetCurrentContext();</span><br><span class="line">CGContextSetTextMatrix(context, CGAffineTransformIdentity);</span><br><span class="line">CGContextTranslateCTM(context, 0, caSize.height);</span><br><span class="line">CGContextScaleCTM(context, 1.0, -1.0); // coretext坐标系翻转</span><br><span class="line">CTFrameDraw(frame, context);</span><br><span class="line">//.....将上面正则出来的表情图片也绘制在这个context上</span><br></pre></td></tr></table></figure>
+
+<p>最终我们得到这个需要展示的图片内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">UIImage *image = UIGraphicsGetImageFromCurrentImageContext();</span><br><span class="line">UIGraphicsEndImageContext();</span><br></pre></td></tr></table></figure>
+
+<p>在展示上面的图片时，将他赋给layer的contents<br>这一步必须在主线程执行，可以使用NSCache对此缓存，以达到流畅的效果，且不用担心内存问题</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">self.layer.contents = (__bridge id)data.contents.CGImage;</span><br></pre></td></tr></table></figure>
+
+<p>最终效果在GitHub见<a target="_blank" rel="noopener" href="https://github.com/chdo002/cdchatlist">CDChatList</a></p>
+<p>参考文章</p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/liujinlongxa/article/details/44864463">iOS中的富文本技术（2）-CoreText框架</a></p>
+<p><a target="_blank" rel="noopener" href="http://www.360doc.com/content/14/0214/15/11991_352473651.shtml">猿题库iOS客户端的技术细节(三):基于CoreText的排版引擎</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/chaoyuan899/article/details/46662679">基于 CoreText 的排版引擎：基础</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/04/26/CoreText%E7%AC%94%E8%AE%B0/" data-id="clvq0zjbr00017qqt51h65fve" data-title="CoreText" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-CoreText" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2018/04/26/CoreText/" class="article-date">
@@ -641,50 +710,6 @@
 
 
   
-    <article id="post-reactnative" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2017/10/09/reactnative/" class="article-date">
-  <time class="dt-published" datetime="2017-10-09T14:52:31.000Z" itemprop="datePublished">2017-10-09</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2017/10/09/reactnative/">reactnative</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>  <a target="_blank" rel="noopener" href="http://reactnative.cn/">reactnative 中文教程</a></p>
-<p>  <a target="_blank" rel="noopener" href="http://facebook.github.io/react-native/">reactnative GitHub</a></p>
-<p>  <a target="_blank" rel="noopener" href="http://facebook.github.io/react-native/docs/integration-with-existing-apps.html">集成React Native 到APP中</a><br>  — podfile中要加入， <code>BatchedBridge</code></p>
-<p>  <a target="_blank" rel="noopener" href="http://www.runoob.com/react/react-tutorial.html">React 菜鸟教程</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2017/10/09/reactnative/" data-id="clvq0zjc7000f7qqt128ee720" data-title="reactnative" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/rn/" rel="tag">rn</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -703,7 +728,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/http-www-runoob-com-sqlite/" rel="tag">http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rn/" rel="tag">rn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" rel="tag">runtime track 埋点</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shadowsocks/" rel="tag">shadowsocks</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webpack/" rel="tag">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/weex/" rel="tag">weex</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/flutter/" rel="tag">flutter</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/http-www-runoob-com-sqlite/" rel="tag">http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rn/" rel="tag">rn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" rel="tag">runtime track 埋点</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shadowsocks/" rel="tag">shadowsocks</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webpack/" rel="tag">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/weex/" rel="tag">weex</a></li></ul>
     </div>
   </div>
 
@@ -713,7 +738,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/http-www-runoob-com-sqlite/" style="font-size: 10px;">http://www.runoob.com/sqlite/</a> <a href="/tags/rn/" style="font-size: 10px;">rn</a> <a href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" style="font-size: 10px;">runtime track 埋点</a> <a href="/tags/shadowsocks/" style="font-size: 10px;">shadowsocks</a> <a href="/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/tags/weex/" style="font-size: 10px;">weex</a>
+      <a href="/tags/flutter/" style="font-size: 10px;">flutter</a> <a href="/tags/http-www-runoob-com-sqlite/" style="font-size: 10px;">http://www.runoob.com/sqlite/</a> <a href="/tags/rn/" style="font-size: 10px;">rn</a> <a href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" style="font-size: 10px;">runtime track 埋点</a> <a href="/tags/shadowsocks/" style="font-size: 10px;">shadowsocks</a> <a href="/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/tags/weex/" style="font-size: 10px;">weex</a>
     </div>
   </div>
 
@@ -722,7 +747,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archiv</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/02/">February 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/09/">September 2017</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2024/05/">May 2024</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/02/">February 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/09/">September 2017</a></li></ul>
     </div>
   </div>
 
@@ -733,6 +758,10 @@
     <h3 class="widget-title">letzter Beitrag</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2024/05/03/%E4%B8%8A%E6%8B%89%E5%8A%A0%E8%BD%BD%E7%BB%84%E4%BB%B6/">上拉加载组件</a>
+          </li>
         
           <li>
             <a href="/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/">NSArrary强引用问题</a>
@@ -748,10 +777,6 @@
         
           <li>
             <a href="/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/">LeetCode</a>
-          </li>
-        
-          <li>
-            <a href="/2018/05/23/SQLite%20-%20C:C++/">SQLite - C/C++</a>
           </li>
         
       </ul>
