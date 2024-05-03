@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>RunLoop应用 | blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="网上关于runloop的解析已经更丰富了，这里只记录runloop的实践部分  RunLoop 干嘛的为了实现线程不退出，可以随时接受消息执行任务，node.js 的事件处理，windows程序的消息循环，iOS、OSX的RunLoop都是这种机制 线程和runloop一一对应，关系保存在全局字典中 主线程自带runloop，无需创建，新建的线程需要手动对应runloop，不让执行完成就结束了">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RunLoop应用">
+<meta property="og:url" content="http://example.com/2018/04/25/RunLoop%E5%BA%94%E7%94%A8/index.html">
+<meta property="og:site_name" content="blog">
+<meta property="og:description" content="网上关于runloop的解析已经更丰富了，这里只记录runloop的实践部分  RunLoop 干嘛的为了实现线程不退出，可以随时接受消息执行任务，node.js 的事件处理，windows程序的消息循环，iOS、OSX的RunLoop都是这种机制 线程和runloop一一对应，关系保存在全局字典中 主线程自带runloop，无需创建，新建的线程需要手动对应runloop，不让执行完成就结束了">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-04-25T09:25:02.000Z">
+<meta property="article:modified_time" content="2024-05-02T03:28:47.402Z">
+<meta property="article:author" content="chdo002">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<meta name="generator" content="Hexo 7.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Suche"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Suche"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-RunLoop应用" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/04/25/RunLoop%E5%BA%94%E7%94%A8/" class="article-date">
+  <time class="dt-published" datetime="2018-04-25T09:25:02.000Z" itemprop="datePublished">2018-04-25</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      RunLoop应用
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>网上关于runloop的解析已经更丰富了，这里只记录runloop的实践部分</p>
+</blockquote>
+<p>RunLoop</p>
+<h1 id="干嘛的"><a href="#干嘛的" class="headerlink" title="干嘛的"></a>干嘛的</h1><p>为了实现线程不退出，可以随时接受消息执行任务，<br>node.js 的事件处理，windows程序的消息循环，iOS、OSX的RunLoop都是这种机制</p>
+<p>线程和runloop一一对应，关系保存在全局字典中</p>
+<p>主线程自带runloop，无需创建，新建的线程需要手动对应runloop，不让执行完成就结束了</p>
+<h1 id="常驻线程"><a href="#常驻线程" class="headerlink" title="常驻线程"></a>常驻线程</h1><p>常驻线程的意义，我理解是用来处理需要在子线程长期处理的事情，比如说记日志，埋点，IO数据处理等等之类。</p>
+<p>这样想的话其实和NSOperationqueue或者GCD实现一个串行队列应该没有什么区别。</p>
+<p>代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">static NSThread *workThread;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">-(void)initThread&#123;</span><br><span class="line"></span><br><span class="line">	workThread = [[NSThread alloc] initWithTarget:self selector:@selector(run) object:nil];</span><br><span class="line"></span><br><span class="line">	[workThread start];</span><br><span class="line">&#125;</span><br><span class="line">	</span><br><span class="line"></span><br><span class="line">// 让子线程runloop跑起来，防止线程结束</span><br><span class="line">-(void)run&#123;</span><br><span class="line"></span><br><span class="line">    [[NSRunLoop currentRunLoop] addPort:[NSMachPort port] forMode:NSDefaultRunLoopMode];</span><br><span class="line">    </span><br><span class="line">    while (!_stopRunning) &#123;</span><br><span class="line">        @autoreleasepool &#123;</span><br><span class="line">            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">// 这段代码直接复制自weex</span><br><span class="line">// 在子线程执行代码</span><br><span class="line">+ (void)_performBlockOnBridgeThread:(void (^)(void))block</span><br><span class="line">&#123;</span><br><span class="line">    if ([NSThread currentThread] == workThread) &#123;</span><br><span class="line">        block();</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        [self performSelector:@selector(_performBlockOnBridgeThread:)</span><br><span class="line">                     onThread:[self jsThread]</span><br><span class="line">                   withObject:[block copy]</span><br><span class="line">                waitUntilDone:NO];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+<h1 id="runloop-observer"><a href="#runloop-observer" class="headerlink" title="runloop  observer"></a>runloop  observer</h1><p>可以通过CFRunLoopAddObserver，给runloop添加观察者，具体实践如下</p>
+<p>这是CDChatList中的一段代码，主要是为了实现，label在scrollview滚动时，去除选中文字的样式，如果不用runloop也是可以用通知或者其他的代理形式实现，但是会有一定的耦合</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">currentMode = CFRunLoopCopyCurrentMode(CFRunLoopGetMain());</span><br><span class="line"></span><br><span class="line"> __weak typeof(self) weakS = self;</span><br><span class="line">// 这里监听了所有的runloop事件，然后在回调中过滤出滚动事件，因为滚动事件会一直回调，所以这里需要特别处理，只观察进入滚动的时机</span><br><span class="line">CFRunLoopObserverRef observer = CFRunLoopObserverCreateWithHandler(kCFAllocatorDefault, kCFRunLoopAllActivities, YES, 0, ^(CFRunLoopObserverRef observer, CFRunLoopActivity activity) &#123;</span><br><span class="line">    if (weakS) &#123;</span><br><span class="line">        __strong typeof(weakS) strongS = weakS;</span><br><span class="line">        CFComparisonResult rest = CFStringCompare(strongS-&gt;currentMode, CFRunLoopCopyCurrentMode(CFRunLoopGetMain()), kCFCompareBackwards);</span><br><span class="line">        if (rest != kCFCompareEqualTo) &#123;</span><br><span class="line">            strongS-&gt;currentMode = CFRunLoopCopyCurrentMode(CFRunLoopGetMain());</span><br><span class="line">            if ((NSString *)CFBridgingRelease(strongS-&gt;currentMode) == UITrackingRunLoopMode) &#123;</span><br><span class="line">                [strongS scrollDidScroll];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">CFRunLoopAddObserver(CFRunLoopGetMain(), observer, kCFRunLoopCommonModes);</span><br></pre></td></tr></table></figure>
+
+
+
+
+<p>下面是YYTransaction中相关的代码，具有类似的实现，这里监听的目的应该是在runloop将要进入休眠时，把不需要立即执行的任务执行，以达到async的效果。</p>
+<p>在AsyncDisplayKit中也有类似的用法</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">static NSMutableSet *transactionSet = nil;</span><br><span class="line"></span><br><span class="line">static void YYRunLoopObserverCallBack(CFRunLoopObserverRef observer, CFRunLoopActivity activity, void *info) &#123;</span><br><span class="line">    if (transactionSet.count == 0) return;</span><br><span class="line">    NSSet *currentSet = transactionSet;</span><br><span class="line">    transactionSet = [NSMutableSet new];</span><br><span class="line">    [currentSet enumerateObjectsUsingBlock:^(YYTransaction *transaction, BOOL *stop) &#123;</span><br><span class="line">#pragma clang diagnostic push</span><br><span class="line">#pragma clang diagnostic ignored &quot;-Warc-performSelector-leaks&quot;</span><br><span class="line">        [transaction.target performSelector:transaction.selector];</span><br><span class="line">#pragma clang diagnostic pop</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static void YYTransactionSetup() &#123;</span><br><span class="line">    static dispatch_once_t onceToken;</span><br><span class="line">    dispatch_once(&amp;onceToken, ^&#123;</span><br><span class="line">        transactionSet = [NSMutableSet new];</span><br><span class="line">        CFRunLoopRef runloop = CFRunLoopGetMain();</span><br><span class="line">        CFRunLoopObserverRef observer;</span><br><span class="line">        </span><br><span class="line">        observer = CFRunLoopObserverCreate(CFAllocatorGetDefault(),</span><br><span class="line">                                           kCFRunLoopBeforeWaiting | kCFRunLoopExit,</span><br><span class="line">                                           true,      // repeat</span><br><span class="line">                                           0xFFFFFF,  // after CATransaction(2000000)</span><br><span class="line">                                           YYRunLoopObserverCallBack, NULL);</span><br><span class="line">        CFRunLoopAddObserver(runloop, observer, kCFRunLoopCommonModes);</span><br><span class="line">        CFRelease(observer);</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/04/25/RunLoop%E5%BA%94%E7%94%A8/" data-id="clvq0zjby00077qqt17ldebsz" data-title="RunLoop应用" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/04/26/CoreText/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Neuer</strong>
+      <div class="article-nav-title">
+        
+          CoreText
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/04/20/GCD%E4%B9%8BNSoperation/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Älter</strong>
+      <div class="article-nav-title">GCD之NSoperation</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/http-www-runoob-com-sqlite/" rel="tag">http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rn/" rel="tag">rn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" rel="tag">runtime track 埋点</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shadowsocks/" rel="tag">shadowsocks</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webpack/" rel="tag">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/weex/" rel="tag">weex</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/http-www-runoob-com-sqlite/" style="font-size: 10px;">http://www.runoob.com/sqlite/</a> <a href="/tags/rn/" style="font-size: 10px;">rn</a> <a href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" style="font-size: 10px;">runtime track 埋点</a> <a href="/tags/shadowsocks/" style="font-size: 10px;">shadowsocks</a> <a href="/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/tags/weex/" style="font-size: 10px;">weex</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/02/">February 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/09/">September 2017</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">letzter Beitrag</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/">NSArrary强引用问题</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/27/iOS%E5%90%AF%E5%8A%A8%E8%A7%A3%E6%9E%90/">iOS启动解析</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/07/NSNull%E5%AF%BC%E8%87%B4%E7%9A%84%E6%80%A7%E8%83%BD%E4%B8%8B%E9%99%8D/">NSNull导致的性能下降</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/">LeetCode</a>
+          </li>
+        
+          <li>
+            <a href="/2018/05/23/SQLite%20-%20C:C++/">SQLite - C/C++</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2024 chdo002<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

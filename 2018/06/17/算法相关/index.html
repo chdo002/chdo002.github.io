@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>LeetCode | blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="两数之和题目： 给定一个整数数列，找出其中和为特定值的那两个数。 你可以假设每个输入都只会有一种答案，同样的元素不能被重用。 示例: 给定 nums &#x3D; [2, 7, 11, 15], target &#x3D; 9 因为 nums[0] + nums[1] &#x3D; 2 + 7 &#x3D; 9所以返回 [0, 1] 答案：通过以空间换取速度的方式，我们可以将查找时间从O(n) 降">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LeetCode">
+<meta property="og:url" content="http://example.com/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/index.html">
+<meta property="og:site_name" content="blog">
+<meta property="og:description" content="两数之和题目： 给定一个整数数列，找出其中和为特定值的那两个数。 你可以假设每个输入都只会有一种答案，同样的元素不能被重用。 示例: 给定 nums &#x3D; [2, 7, 11, 15], target &#x3D; 9 因为 nums[0] + nums[1] &#x3D; 2 + 7 &#x3D; 9所以返回 [0, 1] 答案：通过以空间换取速度的方式，我们可以将查找时间从O(n) 降">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-06-17T07:03:29.000Z">
+<meta property="article:modified_time" content="2024-05-02T03:28:47.405Z">
+<meta property="article:author" content="chdo002">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<meta name="generator" content="Hexo 7.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Suche"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Suche"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-算法相关" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/" class="article-date">
+  <time class="dt-published" datetime="2018-06-17T07:03:29.000Z" itemprop="datePublished">2018-06-17</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      LeetCode
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h3 id="两数之和"><a href="#两数之和" class="headerlink" title="两数之和"></a>两数之和</h3><p>题目：</p>
+<p>给定一个整数数列，找出其中和为特定值的那两个数。</p>
+<p>你可以假设每个输入都只会有一种答案，同样的元素不能被重用。</p>
+<p>示例:</p>
+<p>给定 nums &#x3D; [2, 7, 11, 15], target &#x3D; 9</p>
+<p>因为 nums[0] + nums[1] &#x3D; 2 + 7 &#x3D; 9<br>所以返回 [0, 1]</p>
+<p>答案：<br>通过以空间换取速度的方式，我们可以将查找时间从<br>O(n) 降低到 O(1)。哈希表正是为此目的而构建的，它支持以 近似 恒定的时间进行快速查找。我用“近似”来描述，是因为一旦出现冲突，查找用时可能会退化到 O(n)。但只要你仔细地挑选哈希函数，在哈希表中进行查找的用时应当被摊销为 O(1)。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">class Solution &#123;</span><br><span class="line">    func twoSum(_ nums: [Int], _ target: Int) -&gt; [Int] &#123;</span><br><span class="line">        var valKeyMap: Dictionary&lt;Int, Int&gt; = Dictionary&lt;Int, Int&gt;()</span><br><span class="line">        </span><br><span class="line">        for (idx,val) in nums.enumerated() &#123;</span><br><span class="line">            let other_target = target - val</span><br><span class="line">            if let ot = valKeyMap[other_target] &#123;</span><br><span class="line">                if ot != idx &#123;</span><br><span class="line">                    return [idx,ot]</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            valKeyMap[val] = idx</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        return []</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Solution().twoSum([1,2,4,5], 9)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+<h3 id="两数相加"><a href="#两数相加" class="headerlink" title="两数相加"></a>两数相加</h3><p>给定两个非空链表来表示两个非负整数。位数按照逆序方式存储，它们的每个节点只存储单个数字。将两数相加返回一个新的链表。</p>
+<p>你可以假设除了数字 0 之外，这两个数字都不会以零开头。</p>
+<p>示例：</p>
+<p>输入：(2 -&gt; 4 -&gt; 3) + (5 -&gt; 6 -&gt; 4)<br>输出：7 -&gt; 0 -&gt; 8<br>原因：342 + 465 &#x3D; 807</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">public class ListNode &#123;</span><br><span class="line">    public var val: Int</span><br><span class="line">    public var next: ListNode?</span><br><span class="line">    public init(_ val: Int) &#123;</span><br><span class="line">        self.val = val</span><br><span class="line">        self.next = nil</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class Solution &#123;</span><br><span class="line">    </span><br><span class="line">    func addTwoNumbers(_ l1: ListNode?, _ l2: ListNode?) -&gt; ListNode? &#123;</span><br><span class="line"></span><br><span class="line">        var outCarrer = l1?.next</span><br><span class="line">        var outCarrer2 = l2?.next</span><br><span class="line">        </span><br><span class="line">        var lasttenths = 0</span><br><span class="line">        let sum = l1!.val + l2!.val</span><br><span class="line">        if sum &gt; 9 &#123;</span><br><span class="line">            lasttenths = 1</span><br><span class="line">        &#125;</span><br><span class="line">        let newList:ListNode? = ListNode(sum % 10)</span><br><span class="line">        var inCarrer = newList</span><br><span class="line">        </span><br><span class="line">        while outCarrer != nil || outCarrer2 != nil&#123;</span><br><span class="line">            </span><br><span class="line">            var val1 = 0</span><br><span class="line">            var val2 = 0</span><br><span class="line">            </span><br><span class="line">            if let v = outCarrer?.val &#123;</span><br><span class="line">                val1 = v</span><br><span class="line">            &#125;</span><br><span class="line">            if let v = outCarrer2?.val &#123;</span><br><span class="line">                val2 = v</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">            let sum = val1 + val2 + lasttenths</span><br><span class="line">            lasttenths = sum &gt; 9 ? 1 : 0</span><br><span class="line">            let sum2 = sum % 10</span><br><span class="line">            inCarrer?.next = ListNode(sum2)</span><br><span class="line">            outCarrer = outCarrer?.next</span><br><span class="line">            outCarrer2 = outCarrer2?.next</span><br><span class="line">            inCarrer = inCarrer?.next</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        if lasttenths != 0&#123;</span><br><span class="line">            inCarrer?.next = ListNode(1)</span><br><span class="line">        &#125;</span><br><span class="line">        return newList</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="无重复字符的最长子串"><a href="#无重复字符的最长子串" class="headerlink" title="无重复字符的最长子串"></a>无重复字符的最长子串</h3><p>给定一个字符串，找出不含有重复字符的最长子串的长度。</p>
+<p>示例：</p>
+<p>给定 “abcabcbb” ，没有重复字符的最长子串是 “abc” ，那么长度就是3。</p>
+<p>给定 “bbbbb” ，最长的子串就是 “b” ，长度是1。</p>
+<p>给定 “pwwkew” ，最长子串是 “wke” ，长度是3。请注意答案必须是一个子串，”pwke” 是 子序列  而不是子串。</p>
+<p>方法1</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">public class Solution &#123;</span><br><span class="line">    public int lengthOfLongestSubstring(String s) &#123;</span><br><span class="line">        int n = s.length();</span><br><span class="line">        int ans = 0;</span><br><span class="line">        for (int i = 0; i &lt; n; i++)</span><br><span class="line">            for (int j = i + 1; j &lt;= n; j++)</span><br><span class="line">                if (allUnique(s, i, j)) ans = Math.max(ans, j - i);</span><br><span class="line">        return ans;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public boolean allUnique(String s, int start, int end) &#123;</span><br><span class="line">        Set&lt;Character&gt; set = new HashSet&lt;&gt;();</span><br><span class="line">        for (int i = start; i &lt; end; i++) &#123;</span><br><span class="line">            Character ch = s.charAt(i);</span><br><span class="line">            if (set.contains(ch)) return false;</span><br><span class="line">            set.add(ch);</span><br><span class="line">        &#125;</span><br><span class="line">        return true;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>方法2</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">public class Solution &#123;</span><br><span class="line">    public int lengthOfLongestSubstring(String s) &#123;</span><br><span class="line">        int n = s.length();</span><br><span class="line">        Set&lt;Character&gt; set = new HashSet&lt;&gt;();</span><br><span class="line">        int ans = 0, i = 0, j = 0;</span><br><span class="line">        while (i &lt; n &amp;&amp; j &lt; n) &#123;</span><br><span class="line">            // try to extend the range [i, j]</span><br><span class="line">            if (!set.contains(s.charAt(j)))&#123;</span><br><span class="line">                set.add(s.charAt(j++));</span><br><span class="line">                ans = Math.max(ans, j - i);</span><br><span class="line">            &#125;</span><br><span class="line">            else &#123;</span><br><span class="line">                set.remove(s.charAt(i++));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>方法3 </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">public class Solution &#123;</span><br><span class="line">    public int lengthOfLongestSubstring(String s) &#123;</span><br><span class="line">        int n = s.length(), ans = 0;</span><br><span class="line">        Map&lt;Character, Integer&gt; map = new HashMap&lt;&gt;(); // current index of character</span><br><span class="line">        // try to extend the range [i, j]</span><br><span class="line">        for (int j = 0, i = 0; j &lt; n; j++) &#123;</span><br><span class="line">            if (map.containsKey(s.charAt(j))) &#123;</span><br><span class="line">                i = Math.max(map.get(s.charAt(j)), i);</span><br><span class="line">            &#125;</span><br><span class="line">            ans = Math.max(ans, j - i + 1);</span><br><span class="line">            map.put(s.charAt(j), j + 1);</span><br><span class="line">        &#125;</span><br><span class="line">        return ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="快速排序"><a href="#快速排序" class="headerlink" title="快速排序"></a>快速排序</h3><p>swift版本</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">func quicksort&lt;T: Comparable&gt;(_ a: [T]) -&gt; [T] &#123;</span><br><span class="line">  guard a.count &gt; 1 else &#123; return a &#125;</span><br><span class="line"></span><br><span class="line">  let pivot = a[a.count/2]</span><br><span class="line">  let less = a.filter &#123; $0 &lt; pivot &#125;</span><br><span class="line">  let equal = a.filter &#123; $0 == pivot &#125;</span><br><span class="line">  let greater = a.filter &#123; $0 &gt; pivot &#125;</span><br><span class="line"></span><br><span class="line">  return quicksort(less) + equal + quicksort(greater)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>C++版本</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">// 对arr[l...r]部分进行partition操作</span><br><span class="line">// 返回p, 使得arr[l...p-1] &lt; arr[p] ; arr[p+1...r] &gt; arr[p]</span><br><span class="line">template &lt;typename T&gt;</span><br><span class="line">int _partition(T arr[], int l, int r)&#123;</span><br><span class="line"></span><br><span class="line">    // 随机在arr[l...r]的范围中, 选择一个数值作为标定点pivot</span><br><span class="line">    swap( arr[l] , arr[rand()%(r-l+1)+l] );</span><br><span class="line"></span><br><span class="line">    T v = arr[l];</span><br><span class="line">    int j = l;</span><br><span class="line">    for( int i = l + 1 ; i &lt;= r ; i ++ )</span><br><span class="line">        if( arr[i] &lt; v )&#123;</span><br><span class="line">            j ++;</span><br><span class="line">            swap( arr[j] , arr[i] );</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    swap( arr[l] , arr[j]);</span><br><span class="line"></span><br><span class="line">    return j;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 对arr[l...r]部分进行快速排序</span><br><span class="line">template &lt;typename T&gt;</span><br><span class="line">void _quickSort(T arr[], int l, int r)&#123;</span><br><span class="line"></span><br><span class="line">    // 对于小规模数组, 使用插入排序进行优化</span><br><span class="line">    if( r - l &lt;= 15 )&#123;</span><br><span class="line">        insertionSort(arr,l,r);</span><br><span class="line">        return;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    int p = _partition(arr, l, r);</span><br><span class="line">    _quickSort(arr, l, p-1 );</span><br><span class="line">    _quickSort(arr, p+1, r);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/" data-id="clvq0zjcb000r7qqt6trsefu2" data-title="LeetCode" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/08/07/NSNull%E5%AF%BC%E8%87%B4%E7%9A%84%E6%80%A7%E8%83%BD%E4%B8%8B%E9%99%8D/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Neuer</strong>
+      <div class="article-nav-title">
+        
+          NSNull导致的性能下降
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/05/23/SQLite%20-%20C:C++/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Älter</strong>
+      <div class="article-nav-title">SQLite - C/C++</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/http-www-runoob-com-sqlite/" rel="tag">http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rn/" rel="tag">rn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" rel="tag">runtime track 埋点</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shadowsocks/" rel="tag">shadowsocks</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webpack/" rel="tag">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/weex/" rel="tag">weex</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/http-www-runoob-com-sqlite/" style="font-size: 10px;">http://www.runoob.com/sqlite/</a> <a href="/tags/rn/" style="font-size: 10px;">rn</a> <a href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" style="font-size: 10px;">runtime track 埋点</a> <a href="/tags/shadowsocks/" style="font-size: 10px;">shadowsocks</a> <a href="/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/tags/weex/" style="font-size: 10px;">weex</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/02/">February 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/09/">September 2017</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">letzter Beitrag</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/">NSArrary强引用问题</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/27/iOS%E5%90%AF%E5%8A%A8%E8%A7%A3%E6%9E%90/">iOS启动解析</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/07/NSNull%E5%AF%BC%E8%87%B4%E7%9A%84%E6%80%A7%E8%83%BD%E4%B8%8B%E9%99%8D/">NSNull导致的性能下降</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/">LeetCode</a>
+          </li>
+        
+          <li>
+            <a href="/2018/05/23/SQLite%20-%20C:C++/">SQLite - C/C++</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2024 chdo002<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

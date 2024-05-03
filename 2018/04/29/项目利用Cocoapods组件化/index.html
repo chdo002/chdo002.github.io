@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>项目利用Cocoapods组件化 | blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="最近公司项目重构，准备利用Cocoapods组件化。网上这篇文章已经说的非常好了，我也是参照这篇文章，不过也有一些小坑需要趟一下,所以整理如下。  Cocoapods是非常好的项目依赖管理工具，类似的还有Carthage，不过一番权衡，还是用CP了。 既然是公司项目肯定得建个私有库，将项目的不同部分合适的切分成不同的模块，有的模块还有父子依赖关系，再上传到私有库上，定期维护这些库就可以了，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="项目利用Cocoapods组件化">
+<meta property="og:url" content="http://example.com/2018/04/29/%E9%A1%B9%E7%9B%AE%E5%88%A9%E7%94%A8Cocoapods%E7%BB%84%E4%BB%B6%E5%8C%96/index.html">
+<meta property="og:site_name" content="blog">
+<meta property="og:description" content="最近公司项目重构，准备利用Cocoapods组件化。网上这篇文章已经说的非常好了，我也是参照这篇文章，不过也有一些小坑需要趟一下,所以整理如下。  Cocoapods是非常好的项目依赖管理工具，类似的还有Carthage，不过一番权衡，还是用CP了。 既然是公司项目肯定得建个私有库，将项目的不同部分合适的切分成不同的模块，有的模块还有父子依赖关系，再上传到私有库上，定期维护这些库就可以了，">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-04-28T16:07:03.000Z">
+<meta property="article:modified_time" content="2024-05-02T03:28:47.406Z">
+<meta property="article:author" content="chdo002">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<meta name="generator" content="Hexo 7.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Suche"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Suche"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-项目利用Cocoapods组件化" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/04/29/%E9%A1%B9%E7%9B%AE%E5%88%A9%E7%94%A8Cocoapods%E7%BB%84%E4%BB%B6%E5%8C%96/" class="article-date">
+  <time class="dt-published" datetime="2018-04-28T16:07:03.000Z" itemprop="datePublished">2018-04-29</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      项目利用Cocoapods组件化
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>最近公司项目重构，准备利用Cocoapods组件化。<br>网上<a target="_blank" rel="noopener" href="http://blog.wtlucky.com/blog/2015/02/26/create-private-podspec/">这篇文章</a>已经说的非常好了，我也是参照这篇文章，不过也有一些小坑需要趟一下,所以整理如下。</p>
+</blockquote>
+<p>Cocoapods是非常好的项目依赖管理工具，类似的还有Carthage，不过一番权衡，还是用CP了。</p>
+<p>既然是公司项目肯定得建个私有库，将项目的不同部分合适的切分成不同的模块，有的模块还有父子依赖关系，再上传到私有库上，定期维护这些库就可以了，这样可以有效和划分人员和代码的职责，方便管理。</p>
+<p>最终，项目被分成了三个库，分别是A（工具库）、B（数据库）、C（一个复杂视图封装好的组件库），BC依赖于A，BC之间互相独立。</p>
+<p>下面是具体实现记录：</p>
+<h3 id="创建并设置一个私有的Spec-Repo"><a href="#创建并设置一个私有的Spec-Repo" class="headerlink" title="创建并设置一个私有的Spec Repo"></a>创建并设置一个私有的<code>Spec Repo</code></h3><p>上面的ABC就是我们的私有pods, 而<code>Spec Repo</code>就是私有的pods的集合仓库，地位等同于公共的Cocoapods仓库，等我们配置完成后，用命令<code>pod search XXXX</code>,就会依次搜索公共ocoapods仓库和我们的私有仓库。</p>
+<p><code>Spec Repo</code>本质是一个git仓库，仓库中保存着每一个私有pods的索引文件，索引文件记录了各个私有pods的关键信息，比如名称，代码地址，介绍之类的。</p>
+<p>首先建一个普通的私有仓库，一般放在公司的服务器上，可以取名叫某某公司的pods就行，让后告诉cocoapod这是我们的私有仓库</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pod repo add WTSpecs https://coding.net/wtlucky/WTSpecs.git</span><br></pre></td></tr></table></figure>
+
+<p>本地的<code>/Users/xxx/.cocoapods/repo/</code>文件夹下就会多出这个仓库了</p>
+<h3 id="创建Pod项目"><a href="#创建Pod项目" class="headerlink" title="创建Pod项目"></a>创建Pod项目</h3><p>pods集合仓库建好后，就开始逐个创建私有pods的仓库，因为所有的私有pod都依赖A仓库，所以要先搞A</p>
+<p>具体命令是<code>pod lib create A</code>, Cocoapods会根据你的设置创建好模板工程，让后就可以在模板里写代码了，</p>
+<p>pod的模板工程中包括以下的几个关键的文件或文件夹，<br><code>A/</code>,存放代码和资源的地方,里面包括<code>Class</code>,<code>Assets</code><br><code>A.podspec</code>,这个就是私有pod的身份证了，里面记录了这个pod的所有信息，当我们把这个pod提交到pods集合仓库时，本质就是提交这个podspec文件过去，不然pods集合仓库的空间根本不够用。<br><code>Example/</code>，这是在创建模板时，默认会建的文件夹，里面存放了依赖这个pod的demo工程，当让也可以用模板的，手动搞一个。</p>
+<p>首先看看podspec的内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">#</span><br><span class="line"># Be sure to run `pod lib lint A.podspec&#x27; to ensure this is a</span><br><span class="line"># valid spec before submitting.</span><br><span class="line">#</span><br><span class="line"># Any lines starting with a # are optional, but their use is encouraged</span><br><span class="line"># To learn more about a Podspec see https://guides.cocoapods.org/syntax/podspec.html</span><br><span class="line">#</span><br><span class="line"></span><br><span class="line">Pod::Spec.new do |s|</span><br><span class="line">  s.name             = &#x27;A&#x27;</span><br><span class="line">  s.version          = &#x27;0.1.0&#x27;</span><br><span class="line">  s.summary          = &#x27;A short description of A.&#x27;</span><br><span class="line"></span><br><span class="line"># This description is used to generate tags and improve search results.</span><br><span class="line">#   * Think: What does it do? Why did you write it? What is the focus?</span><br><span class="line">#   * Try to keep it short, snappy and to the point.</span><br><span class="line">#   * Write the description between the DESC delimiters below.</span><br><span class="line">#   * Finally, don&#x27;t worry about the indent, CocoaPods strips it!</span><br><span class="line"></span><br><span class="line">  s.description      = &lt;&lt;-DESC</span><br><span class="line">TODO: Add long description of the pod here.</span><br><span class="line">                       DESC</span><br><span class="line"></span><br><span class="line">  s.homepage         = &#x27;https://github.com/chdo002/A&#x27;</span><br><span class="line">  # s.screenshots     = &#x27;www.example.com/screenshots_1&#x27;, &#x27;www.example.com/screenshots_2&#x27;</span><br><span class="line">  s.license          = &#123; :type =&gt; &#x27;MIT&#x27;, :file =&gt; &#x27;LICENSE&#x27; &#125;</span><br><span class="line">  s.author           = &#123; &#x27;chdo002&#x27; =&gt; &#x27;1107661983@qq.com&#x27; &#125;</span><br><span class="line">  s.source           = &#123; :git =&gt; &#x27;https://github.com/chdo002/A.git&#x27;, :tag =&gt; s.version.to_s &#125;</span><br><span class="line">  # s.social_media_url = &#x27;https://twitter.com/&lt;TWITTER_USERNAME&gt;&#x27;</span><br><span class="line"></span><br><span class="line">  s.ios.deployment_target = &#x27;8.0&#x27;</span><br><span class="line"></span><br><span class="line">  s.source_files = &#x27;A/Classes/**/*&#x27;</span><br><span class="line">  </span><br><span class="line">  # s.resource_bundles = &#123;</span><br><span class="line">  #   &#x27;A&#x27; =&gt; [&#x27;A/Assets/*.png&#x27;]</span><br><span class="line">  # &#125;</span><br><span class="line"></span><br><span class="line">  # s.public_header_files = &#x27;Pod/Classes/**/*.h&#x27;</span><br><span class="line">  # s.frameworks = &#x27;UIKit&#x27;, &#x27;MapKit&#x27;</span><br><span class="line">  # s.dependency &#x27;AFNetworking&#x27;, &#x27;~&gt; 2.3&#x27;</span><br><span class="line">end</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>拣几个关键的说下，</p>
+<p><code>s.name</code> 需要想好，最好有公司或者单位前缀，不然有大坑，而且不好改，后面细说<br><code>s.version</code>指定了这个pod的版本，非常重要。<br><code>s.homepage</code>和<code>s.source</code>，指定了仓库的地址，需要填写正确<br><code>s.source_files</code> 指向我们的代码路径，这里统配了这个路径下的所有文件<br><code>s.resource_bundles</code> 是说明我们的pod所包含的资源文件用的，在工程中，这些资源会被打包成bundle，放在这个pod名的framework下，所以不需要担心资源重名问题<br><code>s.frameworks</code>和<code>s.dependency</code>是pod的系统依赖和对其他pod的依赖，这里有点需要注意，如果依赖的其他pod是私有库的话，我们也不能在这里说明，需要在外部处理，见下文。</p>
+<p>这些属性的验证可以通过命令<code>pod lib lint</code>检查，实际上这个命令也是检查项目代码能否顺利编译。</p>
+<p>在哪写私有pod代码呢？</p>
+<p>打开<code>example</code>下的项目worksapce文件，可以看到在<code>pods</code>target下有个<code>Development Pods</code>文件夹，这个就是我们的私有pods存在的地方，删掉里面的<code>ReplaceMe.m</code>文件就可以了。</p>
+<p>当写完一部分代码，想要看看是否奏效时，在<code>example</code>路径下执行<code>pod install</code>更新工程，这个和普通的操作没有区别。</p>
+<p>一番编写调试完成，我们的私有pods没有问题的话，那就可以提交第一个版本了</p>
+<h3 id="向Spec-Repo提交podspec"><a href="#向Spec-Repo提交podspec" class="headerlink" title="向Spec Repo提交podspec"></a>向Spec Repo提交podspec</h3><p>向Spec Repo提交podspec之前还是需要几步操作，</p>
+<p>首先向pod远程仓库提交代码，用<code>pod lib lint</code>验证，可以加上<code>--verbose</code>查看具体的编译过程，这一步也是比较容易出错的地方，不过出错的原因都会详细说明。</p>
+<p>编译通过的话，就可以commit，并在这个commit打上个tag，tag要与这此pod的版本一致。</p>
+<p>比如我这次提交的pod版本是0.0.1，那我就要打个0.0.1的tag，<code>git tag -m &quot;A pod first Release&quot; &quot;0.0.1&quot;</code></p>
+<p>然后都push上去，<code>git  push origin --tags</code></p>
+<p>最后就是<code>pod repo push WTSpecs A.podspec </code>, 这一步也是会执行<code>pod lib lint</code>的，你也可以添加<code>--verbose</code>和其他参数。</p>
+<p>如果一切顺利，在本地路径<code>/Users/xx/.cocoapods/repo/WTSpecs</code>下可以发现我们提交的pod，这样你就可以在自己的工程引用这个私有的pod了</p>
+<h3 id="使用私有pod"><a href="#使用私有pod" class="headerlink" title="使用私有pod"></a>使用私有pod</h3><p>在<code>Podfile</code>中有两种方法可以引用，</p>
+<h4 id="方法一"><a href="#方法一" class="headerlink" title="方法一"></a>方法一</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">use_frameworks!</span><br><span class="line"></span><br><span class="line">target &#x27;Test_Example&#x27; do</span><br><span class="line">    # 这里可以单独指定这个私有pod的源</span><br><span class="line">  pod &#x27;A&#x27;, :source =&gt; &#x27;https://coding.net/wtlucky/podTestLibrary.git&#x27;</span><br><span class="line"></span><br><span class="line">end</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="方法二"><a href="#方法二" class="headerlink" title="方法二"></a>方法二</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">use_frameworks!</span><br><span class="line"></span><br><span class="line"># 在这里也可以全局指定pod源，这样在加载pod时，就会先从官方库中找，然后去我们的私有库中找，所以一定要把私有pod的名称和官方库中pod的名称区分开，最好先pod search确定下。</span><br><span class="line"></span><br><span class="line">source &#x27;https://github.com/CocoaPods/Specs.git&#x27;  # 官方库</span><br><span class="line">source &#x27;https://coding.net/wtlucky/podTestLibrary.git&#x27;   # 私有库</span><br><span class="line"></span><br><span class="line">target &#x27;Test_Example&#x27; do</span><br><span class="line">    # 这里可以单独指定这个私有pod的源</span><br><span class="line">  pod &#x27;A&#x27;</span><br><span class="line">  pod &#x27;FMDB&#x27;</span><br><span class="line"></span><br><span class="line">end</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="pod的更新。"><a href="#pod的更新。" class="headerlink" title="pod的更新。"></a>pod的更新。</h3><p>对pod<code>A</code>的维护更新，也是比较简单的。</p>
+<p>改完的代码提交一个commit，然后打上相应的tag，比如说<code>0.0.2</code>,让后都push上去，</p>
+<p>再<code>pod repo push WTSpecs A.podspec </code>即可</p>
+<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><h4 id="依赖问题"><a href="#依赖问题" class="headerlink" title="依赖问题"></a>依赖问题</h4><p>在做<code>B</code>pod时，因为依赖了私有库<code>A</code>，所以要写<code>s.dependency &#39;A&#39;</code>,同时这个pod还依赖了其他官方库中的pod，比如说<code>AFNetworking</code>。</p>
+<p>在<code>pod lib lint</code>或者<code>pod repo push</code>,就需要说明这个pod的源了，具体为什么不能再pods spec中指明各个依赖的源<a target="_blank" rel="noopener" href="https://github.com/CocoaPods/CocoaPods/issues/4921">还不清楚</a>,</p>
+<p>在命令后面加上</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--sources=https://github.com/CocoaPods/Specs.git,https://coding.net/wtlucky/podTestLibrary.git</span><br></pre></td></tr></table></figure>
+
+<p>就可以了，意思是要指明编译时的源</p>
+<h4 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h4><p><code>pod repo push</code> 提交后一般要清一下pod缓存 <code>pod cache clean --all</code>, 然后调用<code> pod setup</code>更新</p>
+<h4 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h4><p>删除本地tag <code>git tag -d 0.0.1</code><br>删除远程tag <code>git push origin --delete tag 0.0.1</code></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/04/29/%E9%A1%B9%E7%9B%AE%E5%88%A9%E7%94%A8Cocoapods%E7%BB%84%E4%BB%B6%E5%8C%96/" data-id="clvq0zjcd000v7qqt3bed8hef" data-title="项目利用Cocoapods组件化" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/05/03/%E9%9D%99%E6%80%81%E5%BA%93%E7%9A%84%E6%8B%86%E5%88%86%E5%90%88%E5%B9%B6/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Neuer</strong>
+      <div class="article-nav-title">
+        
+          静态库的拆分合并
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/04/26/CoreText%E7%AC%94%E8%AE%B0/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Älter</strong>
+      <div class="article-nav-title">CoreText</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/http-www-runoob-com-sqlite/" rel="tag">http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rn/" rel="tag">rn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" rel="tag">runtime track 埋点</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shadowsocks/" rel="tag">shadowsocks</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webpack/" rel="tag">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/weex/" rel="tag">weex</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/http-www-runoob-com-sqlite/" style="font-size: 10px;">http://www.runoob.com/sqlite/</a> <a href="/tags/rn/" style="font-size: 10px;">rn</a> <a href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" style="font-size: 10px;">runtime track 埋点</a> <a href="/tags/shadowsocks/" style="font-size: 10px;">shadowsocks</a> <a href="/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/tags/weex/" style="font-size: 10px;">weex</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/02/">February 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/09/">September 2017</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">letzter Beitrag</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/">NSArrary强引用问题</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/27/iOS%E5%90%AF%E5%8A%A8%E8%A7%A3%E6%9E%90/">iOS启动解析</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/07/NSNull%E5%AF%BC%E8%87%B4%E7%9A%84%E6%80%A7%E8%83%BD%E4%B8%8B%E9%99%8D/">NSNull导致的性能下降</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/">LeetCode</a>
+          </li>
+        
+          <li>
+            <a href="/2018/05/23/SQLite%20-%20C:C++/">SQLite - C/C++</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2024 chdo002<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

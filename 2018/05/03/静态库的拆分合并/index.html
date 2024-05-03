@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>静态库的拆分合并 | blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="由于公司的私有库其他部门不能访问，想要提供的话又不可能提供源码，一般以静态库的方式提供，所以这里记录下，pod打包静态的库相关信息  Cocoapods 支持打包成动态库或者静态库，但是需要插件cocoapods-packager 可通过 gem安装 sudo gem install cocoapods-packager cocoapods-packager 打包只需要依靠podspec文">
+<meta property="og:type" content="article">
+<meta property="og:title" content="静态库的拆分合并">
+<meta property="og:url" content="http://example.com/2018/05/03/%E9%9D%99%E6%80%81%E5%BA%93%E7%9A%84%E6%8B%86%E5%88%86%E5%90%88%E5%B9%B6/index.html">
+<meta property="og:site_name" content="blog">
+<meta property="og:description" content="由于公司的私有库其他部门不能访问，想要提供的话又不可能提供源码，一般以静态库的方式提供，所以这里记录下，pod打包静态的库相关信息  Cocoapods 支持打包成动态库或者静态库，但是需要插件cocoapods-packager 可通过 gem安装 sudo gem install cocoapods-packager cocoapods-packager 打包只需要依靠podspec文">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-05-03T01:13:46.000Z">
+<meta property="article:modified_time" content="2024-05-02T03:28:47.405Z">
+<meta property="article:author" content="chdo002">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<meta name="generator" content="Hexo 7.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Suche"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Suche"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-静态库的拆分合并" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/03/%E9%9D%99%E6%80%81%E5%BA%93%E7%9A%84%E6%8B%86%E5%88%86%E5%90%88%E5%B9%B6/" class="article-date">
+  <time class="dt-published" datetime="2018-05-03T01:13:46.000Z" itemprop="datePublished">2018-05-03</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      静态库的拆分合并
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>由于公司的私有库其他部门不能访问，想要提供的话又不可能提供源码，一般以静态库的方式提供，所以这里记录下，pod打包静态的库相关信息</p>
+</blockquote>
+<p>Cocoapods 支持打包成动态库或者静态库，但是需要插件<a target="_blank" rel="noopener" href="https://github.com/CocoaPods/cocoapods-packager">cocoapods-packager</a></p>
+<p>可通过 gem安装</p>
+<p><code>sudo gem install cocoapods-packager</code></p>
+<p>cocoapods-packager 打包只需要依靠podspec文件即可，所以本地有没有源码文件没有关系。</p>
+<p>具体命令</p>
+<p><code>pod package xxxx.podspec</code></p>
+<p>这样顺利的话可以打包出一个framework动态库</p>
+<p>下面是这个插件的相关参数：</p>
+<pre><code>--force: 如果以前打包过的话，就覆盖同名文件
+--no-mangle:当这个pod有依赖其他pod时，插件会默认修改依赖的名称，以防止主工程也依赖了这个pod，但是版本不同的问题，添加这个参数就不会修改名称了。
+--embedded: 嵌入？
+--library: 静态库
+--dynamic: 动态库
+--bundle-identifier: 如果是framework的话可以，可以修改Bundle ID
+--exclude-deps: 是否把以来的pod打包进来
+--configuration: 打包配合，debug 或者 release, 默认release
+--subspecs: 要打包的子pod
+--spec-sources=默认肯定是从官方的repo仓库找代码仓库，如果是私有的话，就要在这里写明repo仓库地址了
+--verbose: 打印出脚本执行过程
+</code></pre>
+<p>栗子：</p>
+<pre><code>pod package CDChatList.podspec --no-mangle --library --exclude-deps --verbose --spec-sources=https://chdo.github.git,https://chdo.github2.git
+</code></pre>
+<p>打包完成后，会在当前目录得到个表明pod版本的文件夹，里面包含了，编译好的.a 文件，和各个架构的.o文件等，你可以直接使用这个.a 文件了。</p>
+<p>这个.o就是目标文件，.a就是把这些文件都集中到一起，你可以定制自己的.a文件，控制包含的架构，包含的依赖库等，相关命令记录如下：</p>
+<h2 id="查看-a包含架构"><a href="#查看-a包含架构" class="headerlink" title="查看.a包含架构"></a>查看.a包含架构</h2><p><code>lipo -info xxxx.a</code></p>
+<h2 id="按架构分离静态库"><a href="#按架构分离静态库" class="headerlink" title="按架构分离静态库"></a>按架构分离静态库</h2><p><code>lipo xxxx.a -thin armv7 -output xxxx.a</code></p>
+<h2 id="在当前目录拆分静态库为目标文件"><a href="#在当前目录拆分静态库为目标文件" class="headerlink" title="在当前目录拆分静态库为目标文件"></a>在当前目录拆分静态库为目标文件</h2><p><code>ar -x xxx.a</code></p>
+<h2 id="将目标文件合并为静态库"><a href="#将目标文件合并为静态库" class="headerlink" title="将目标文件合并为静态库"></a>将目标文件合并为静态库</h2><p><code>libtool -static -o xxxx.a  *.o</code></p>
+<h2 id="将不同架构静态库合并为通用静态库"><a href="#将不同架构静态库合并为通用静态库" class="headerlink" title="将不同架构静态库合并为通用静态库"></a>将不同架构静态库合并为通用静态库</h2><p><code>lipo -create xxxxx.a xxx.a -output XXX.a</code></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/03/%E9%9D%99%E6%80%81%E5%BA%93%E7%9A%84%E6%8B%86%E5%88%86%E5%90%88%E5%B9%B6/" data-id="clvq0zjcc000t7qqt6e8977xw" data-title="静态库的拆分合并" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/05/13/Shell%E8%84%9A%E6%9C%AC/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Neuer</strong>
+      <div class="article-nav-title">
+        
+          Shell脚本
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/04/29/%E9%A1%B9%E7%9B%AE%E5%88%A9%E7%94%A8Cocoapods%E7%BB%84%E4%BB%B6%E5%8C%96/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Älter</strong>
+      <div class="article-nav-title">项目利用Cocoapods组件化</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/http-www-runoob-com-sqlite/" rel="tag">http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rn/" rel="tag">rn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" rel="tag">runtime track 埋点</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shadowsocks/" rel="tag">shadowsocks</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webpack/" rel="tag">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/weex/" rel="tag">weex</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/http-www-runoob-com-sqlite/" style="font-size: 10px;">http://www.runoob.com/sqlite/</a> <a href="/tags/rn/" style="font-size: 10px;">rn</a> <a href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" style="font-size: 10px;">runtime track 埋点</a> <a href="/tags/shadowsocks/" style="font-size: 10px;">shadowsocks</a> <a href="/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/tags/weex/" style="font-size: 10px;">weex</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/02/">February 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/09/">September 2017</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">letzter Beitrag</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/">NSArrary强引用问题</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/27/iOS%E5%90%AF%E5%8A%A8%E8%A7%A3%E6%9E%90/">iOS启动解析</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/07/NSNull%E5%AF%BC%E8%87%B4%E7%9A%84%E6%80%A7%E8%83%BD%E4%B8%8B%E9%99%8D/">NSNull导致的性能下降</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/">LeetCode</a>
+          </li>
+        
+          <li>
+            <a href="/2018/05/23/SQLite%20-%20C:C++/">SQLite - C/C++</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2024 chdo002<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

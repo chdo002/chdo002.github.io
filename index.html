@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="blog">
+<meta property="og:url" content="http://example.com/index.html">
+<meta property="og:site_name" content="blog">
+<meta property="og:locale">
+<meta property="article:author" content="chdo002">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<meta name="generator" content="Hexo 7.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Suche"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Suche"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-NSArrary强引用问题" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/" class="article-date">
+  <time class="dt-published" datetime="2019-02-15T07:56:06.000Z" itemprop="datePublished">2019-02-15</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/">NSArrary强引用问题</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>在iOS的本地通知功能中，有个细节。</p>
+<p>一般使用通知功能<code>NSNotification</code>，都需要添加和移除观察者，否则会引起一些问题：</p>
+<p>在iOS9以下，如果观察者已经被释放，但是没有移除出通知中心，那么当这个通知发出时，会引起野指针崩溃，iOS9以上对这个问题做了优化，没有手动移除的话，也不会发生什么，估计苹果也认为自动释放会显得智能一点。</p>
+<p>关于iOS如何做到在观察者<code>dealloc</code>的时候，<a target="_blank" rel="noopener" href="https://juejin.im/entry/5a8fe5c551882518c0797ebe">自动移除观察者</a>，网上也有现成的案，这里只是通过这个事情联想到，数组强引用的问题。</p>
+<p>Foundation中数组在元素被添加的时候(这里的数组指平常使用的NSArray和NSMutableArray)会强引用持有，就算使用<code>__weak</code>修饰也没有用，导致一些奇特的内存泄漏和循环引用问题。</p>
+<p>那么除了业务注意的话，就是要找到一些弱引用集合<code>	Weak Reference Collection</code>的实现方法了.</p>
+<h3 id="方法0：使用弱引用包装"><a href="#方法0：使用弱引用包装" class="headerlink" title="方法0：使用弱引用包装"></a>方法0：使用弱引用包装</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">NSValue *value1 = [NSValue valueWithNonretainedObject:_obj1];</span><br><span class="line">[_array addObject:value1];</span><br></pre></td></tr></table></figure>
+
+<p><code>NSValue</code>可以对某对象弱音引用的方法，我们再将value保存到数组中就可以了。<br>但是不建议使用<code>NSValue</code>，可以使用自定义的类来实现，因为<code>valueWithNonretainedObject</code>并不会判空，同时，释放掉的对象，也不会将引用置为空，导致野指针问题。</p>
+<h3 id="方法1：使用CoreFoundation"><a href="#方法1：使用CoreFoundation" class="headerlink" title="方法1：使用CoreFoundation"></a>方法1：使用CoreFoundation</h3><p>使用<code>CoreFoundation</code>中的<code>CFArrayCreateMutable</code>，可以实现弱引用数组。<br>但是需要小心内存释放问题，同时还要注意类型准换。<br>所以不建议使用此方法。</p>
+<p>参考：</p>
+<p><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/4692161/non-retaining-array-for-delegates">https://stackoverflow.com/questions/4692161/non-retaining-array-for-delegates</a><br><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/5c98ac2dab58">https://www.jianshu.com/p/5c98ac2dab58</a><br><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/ed2030920ec4">https://www.jianshu.com/p/ed2030920ec4</a></p>
+<h3 id="方法2：使用NSPointerArray"><a href="#方法2：使用NSPointerArray" class="headerlink" title="方法2：使用NSPointerArray"></a>方法2：使用NSPointerArray</h3><p><code>NSPointerArray</code>可以很好的解决数据类型和自动置空的问题</p>
+<p>NSPointerArray提供<code>strongObjectsPointerArray</code>和<code>weakObjectsPointerArray</code>工厂，<code>weakObjectsPointerArray</code>就是我们需要的弱引用数组方法。</p>
+<p><code>NSPointerArray</code>也处理了元素释放导致数组元素个数不稳定的问题：添加了<code>allObjects</code>属性，代表所有未释放的对象，而原本的<code>count</code>则表示所有元素个数。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"> _storage = [NSPointerArray weakObjectsPointerArray];</span><br><span class="line"></span><br><span class="line">[_storage addPointer:(__bridge void *)(obj)];</span><br><span class="line"></span><br><span class="line">[_storage pointerAtIndex:0]; //obj   此处返回的是对象指针，如果对象已经释放，则为nil.</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>参考：</p>
+<p><a target="_blank" rel="noopener" href="https://yq.aliyun.com/articles/29434">https://yq.aliyun.com/articles/29434</a><br><br><a target="_blank" rel="noopener" href="https://blog.csdn.net/kaiyuanheshang/article/details/52944565">https://blog.csdn.net/kaiyuanheshang/article/details/52944565</a></p>
+<h3 id="方法3：使用NSHashTable和NSMapTable"><a href="#方法3：使用NSHashTable和NSMapTable" class="headerlink" title="方法3：使用NSHashTable和NSMapTable"></a>方法3：使用NSHashTable和NSMapTable</h3><p><code>NSHashTable</code>和<code>NSMapTable</code>使用思路类似<code>NSPointerArray</code>,同时也有实现弱引用的工厂方法，用来满足弱引用的需求。</p>
+<p>二者同<code>NSPointerArray</code>区别在于<code>NSHashTable</code>可以看成<code>NSSet</code>,<code>NSMapTable</code>可以看成<code>NSDictionary</code>。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/" data-id="clvq0zjbw00057qqtcdajgds0" data-title="NSArrary强引用问题" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-iOS启动解析" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/08/27/iOS%E5%90%AF%E5%8A%A8%E8%A7%A3%E6%9E%90/" class="article-date">
+  <time class="dt-published" datetime="2018-08-27T09:58:10.000Z" itemprop="datePublished">2018-08-27</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/08/27/iOS%E5%90%AF%E5%8A%A8%E8%A7%A3%E6%9E%90/">iOS启动解析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>出自<a target="_blank" rel="noopener" href="https://www.jianshu.com/p/962002c6655f">此处</a></p>
+</blockquote>
+<h1 id="基本大纲"><a href="#基本大纲" class="headerlink" title="基本大纲"></a>基本大纲</h1><ol>
+<li>应用的启动分为Pre-main和mian两部分</li>
+<li>在Pre-main中，可以大致分为load dylib-&gt;rebase-&gt;bind-&gt;Objc setup-&gt; initializer，开发能掌握和度量的是initializer部分</li>
+<li>在开发阶段(Xcode)如何查看启动的每个阶段的时间—通过在Xcode中，设置Edit Scheme -&gt; Run -&gt; Argument汇总的环境变量,会在console中输出</li>
+<li>在应用上线后，统计Pre-mian的使用时间。利用的在加载动态库的一个顺序机制，定制自己的动态库，让他在第一个被加载，并在load函数中hook住所有可执行文件，然后统计出最终的每一个的时间，得到最后的时间（后续文章具体讲述）</li>
+<li>Class Load 和 Static Initializers（+(void)load; + (void)initialize; 后续文章）</li>
+<li>Xcode For Static Initializer</li>
+</ol>
+<h1 id="Apple建议"><a href="#Apple建议" class="headerlink" title="Apple建议"></a>Apple建议</h1><blockquote>
+<p>Apple suggest to aim for a total app launch time of under 400ms and you must do it in less than 20 seconds or the system will kill your app.</p>
+</blockquote>
+<p>Apple建议应用的启动时间控制在400ms之下。并且必须在20s以内完成启动，否则系统则会kill掉应用程序。那么话说我们如何知道app的在启动到调用main()方法之前的时间呢？在WWDC 2016的提到了这方面的信息。</p>
+<h2 id="Pre-main时间"><a href="#Pre-main时间" class="headerlink" title="Pre-main时间"></a>Pre-main时间</h2><p>从在屏幕上点击你的app icon开始，到应用执行到main()方法或者执行到applicationWillFinishLaunching的过程中，app执行了一系列的操作。在iOS10之前的系统中，我们无处得知其中的细节。而在iOS10系统中，可以通过简单在Xcode设置，在控制台就可以打印出Pre-main的具体信息细节。</p>
+<p>通过Xcode中的Edit Scheme -&gt; Run -&gt; Argument，设置参数DYLD_PRINT_STATISTICS值为1</p>
+<p>设置DYLD_PRINT_STATISTICS<br>这里使用的Objective-C项目，iPad Air2，系统iOS10.3</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Total pre-main time:  74.37 milliseconds (100.0%)</span><br><span class="line">   dylib loading time:  41.05 milliseconds (55.2%)</span><br><span class="line">  rebase/binding time:   8.10 milliseconds (10.9%)</span><br><span class="line">      ObjC setup time:   9.87 milliseconds (13.2%)</span><br><span class="line">     initializer time:  15.23 milliseconds (20.4%)</span><br><span class="line">     slowest intializers :</span><br><span class="line">       libSystem.B.dylib :   6.58 milliseconds (8.8%)</span><br><span class="line">libBacktraceRecording.dylib :   6.27 milliseconds (8.4%)</span><br></pre></td></tr></table></figure>
+
+<p>上文中可以看出总共消耗的时间为74.37ms。</p>
+<ul>
+<li><p>dylib loading time 载入动态库，这个过程中，会去装载app使用的动态库，而每一个动态库有它自己的依赖关系，所以会消耗时间去查找和读取。对于Apple提供的的系统动态库，做了高度的优化。而对于开发者定义导入的动态库，则需要在花费更多的时间。Apple官方建议尽量少的使用自定义的动态库，或者考虑合并多个动态库，其中一个建议是当大于6个的时候，则需要考虑合并它们</p>
+</li>
+<li><p>rebase&#x2F;binding time 重构和绑定，rebase会修正调整处理图像的指针，并且会设置指向绑定(binding)外部的图像指针。所以为了加快rebase&#x2F;binding，则需要更少的做指针修复。当你的app当中有太多的Objective-C的类，方法选择器，和类别会增加这一部分的启动时间。有一个数据当大于20000个时候，会增加800ms的时间。另一点：当你的app中使用了很少的C++的虚拟函数，使用Swift会更加高效</p>
+</li>
+<li><p>ObjC setup time 在Objective-C的运行时(runtime)，需要对类(class)，类别(category)进行注册，以及选择器的分配，所以参照rebase&#x2F;binding time，尽量减少类的数量，可以达到减少这一部分的时间</p>
+</li>
+<li><p>initializer time 这一份指代的是执行+initialize方法的时间。如果你执行了+load方法(不建议)，尽量使用+initialize代替。</p>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/08/27/iOS%E5%90%AF%E5%8A%A8%E8%A7%A3%E6%9E%90/" data-id="clvq0zjc6000e7qqtdq803xcn" data-title="iOS启动解析" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-NSNull导致的性能下降" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/08/07/NSNull%E5%AF%BC%E8%87%B4%E7%9A%84%E6%80%A7%E8%83%BD%E4%B8%8B%E9%99%8D/" class="article-date">
+  <time class="dt-published" datetime="2018-08-07T08:39:34.000Z" itemprop="datePublished">2018-08-07</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/08/07/NSNull%E5%AF%BC%E8%87%B4%E7%9A%84%E6%80%A7%E8%83%BD%E4%B8%8B%E9%99%8D/">NSNull导致的性能下降</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p><a target="_blank" rel="noopener" href="https://github.com/nicklockwood/NullSafe">https://github.com/nicklockwood/NullSafe</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/08/07/NSNull%E5%AF%BC%E8%87%B4%E7%9A%84%E6%80%A7%E8%83%BD%E4%B8%8B%E9%99%8D/" data-id="clvq0zjbx00067qqt3yd37szz" data-title="NSNull导致的性能下降" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-算法相关" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/" class="article-date">
+  <time class="dt-published" datetime="2018-06-17T07:03:29.000Z" itemprop="datePublished">2018-06-17</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/">LeetCode</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h3 id="两数之和"><a href="#两数之和" class="headerlink" title="两数之和"></a>两数之和</h3><p>题目：</p>
+<p>给定一个整数数列，找出其中和为特定值的那两个数。</p>
+<p>你可以假设每个输入都只会有一种答案，同样的元素不能被重用。</p>
+<p>示例:</p>
+<p>给定 nums &#x3D; [2, 7, 11, 15], target &#x3D; 9</p>
+<p>因为 nums[0] + nums[1] &#x3D; 2 + 7 &#x3D; 9<br>所以返回 [0, 1]</p>
+<p>答案：<br>通过以空间换取速度的方式，我们可以将查找时间从<br>O(n) 降低到 O(1)。哈希表正是为此目的而构建的，它支持以 近似 恒定的时间进行快速查找。我用“近似”来描述，是因为一旦出现冲突，查找用时可能会退化到 O(n)。但只要你仔细地挑选哈希函数，在哈希表中进行查找的用时应当被摊销为 O(1)。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">class Solution &#123;</span><br><span class="line">    func twoSum(_ nums: [Int], _ target: Int) -&gt; [Int] &#123;</span><br><span class="line">        var valKeyMap: Dictionary&lt;Int, Int&gt; = Dictionary&lt;Int, Int&gt;()</span><br><span class="line">        </span><br><span class="line">        for (idx,val) in nums.enumerated() &#123;</span><br><span class="line">            let other_target = target - val</span><br><span class="line">            if let ot = valKeyMap[other_target] &#123;</span><br><span class="line">                if ot != idx &#123;</span><br><span class="line">                    return [idx,ot]</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            valKeyMap[val] = idx</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        return []</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Solution().twoSum([1,2,4,5], 9)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+<h3 id="两数相加"><a href="#两数相加" class="headerlink" title="两数相加"></a>两数相加</h3><p>给定两个非空链表来表示两个非负整数。位数按照逆序方式存储，它们的每个节点只存储单个数字。将两数相加返回一个新的链表。</p>
+<p>你可以假设除了数字 0 之外，这两个数字都不会以零开头。</p>
+<p>示例：</p>
+<p>输入：(2 -&gt; 4 -&gt; 3) + (5 -&gt; 6 -&gt; 4)<br>输出：7 -&gt; 0 -&gt; 8<br>原因：342 + 465 &#x3D; 807</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">public class ListNode &#123;</span><br><span class="line">    public var val: Int</span><br><span class="line">    public var next: ListNode?</span><br><span class="line">    public init(_ val: Int) &#123;</span><br><span class="line">        self.val = val</span><br><span class="line">        self.next = nil</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class Solution &#123;</span><br><span class="line">    </span><br><span class="line">    func addTwoNumbers(_ l1: ListNode?, _ l2: ListNode?) -&gt; ListNode? &#123;</span><br><span class="line"></span><br><span class="line">        var outCarrer = l1?.next</span><br><span class="line">        var outCarrer2 = l2?.next</span><br><span class="line">        </span><br><span class="line">        var lasttenths = 0</span><br><span class="line">        let sum = l1!.val + l2!.val</span><br><span class="line">        if sum &gt; 9 &#123;</span><br><span class="line">            lasttenths = 1</span><br><span class="line">        &#125;</span><br><span class="line">        let newList:ListNode? = ListNode(sum % 10)</span><br><span class="line">        var inCarrer = newList</span><br><span class="line">        </span><br><span class="line">        while outCarrer != nil || outCarrer2 != nil&#123;</span><br><span class="line">            </span><br><span class="line">            var val1 = 0</span><br><span class="line">            var val2 = 0</span><br><span class="line">            </span><br><span class="line">            if let v = outCarrer?.val &#123;</span><br><span class="line">                val1 = v</span><br><span class="line">            &#125;</span><br><span class="line">            if let v = outCarrer2?.val &#123;</span><br><span class="line">                val2 = v</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">            let sum = val1 + val2 + lasttenths</span><br><span class="line">            lasttenths = sum &gt; 9 ? 1 : 0</span><br><span class="line">            let sum2 = sum % 10</span><br><span class="line">            inCarrer?.next = ListNode(sum2)</span><br><span class="line">            outCarrer = outCarrer?.next</span><br><span class="line">            outCarrer2 = outCarrer2?.next</span><br><span class="line">            inCarrer = inCarrer?.next</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        if lasttenths != 0&#123;</span><br><span class="line">            inCarrer?.next = ListNode(1)</span><br><span class="line">        &#125;</span><br><span class="line">        return newList</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="无重复字符的最长子串"><a href="#无重复字符的最长子串" class="headerlink" title="无重复字符的最长子串"></a>无重复字符的最长子串</h3><p>给定一个字符串，找出不含有重复字符的最长子串的长度。</p>
+<p>示例：</p>
+<p>给定 “abcabcbb” ，没有重复字符的最长子串是 “abc” ，那么长度就是3。</p>
+<p>给定 “bbbbb” ，最长的子串就是 “b” ，长度是1。</p>
+<p>给定 “pwwkew” ，最长子串是 “wke” ，长度是3。请注意答案必须是一个子串，”pwke” 是 子序列  而不是子串。</p>
+<p>方法1</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">public class Solution &#123;</span><br><span class="line">    public int lengthOfLongestSubstring(String s) &#123;</span><br><span class="line">        int n = s.length();</span><br><span class="line">        int ans = 0;</span><br><span class="line">        for (int i = 0; i &lt; n; i++)</span><br><span class="line">            for (int j = i + 1; j &lt;= n; j++)</span><br><span class="line">                if (allUnique(s, i, j)) ans = Math.max(ans, j - i);</span><br><span class="line">        return ans;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public boolean allUnique(String s, int start, int end) &#123;</span><br><span class="line">        Set&lt;Character&gt; set = new HashSet&lt;&gt;();</span><br><span class="line">        for (int i = start; i &lt; end; i++) &#123;</span><br><span class="line">            Character ch = s.charAt(i);</span><br><span class="line">            if (set.contains(ch)) return false;</span><br><span class="line">            set.add(ch);</span><br><span class="line">        &#125;</span><br><span class="line">        return true;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>方法2</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">public class Solution &#123;</span><br><span class="line">    public int lengthOfLongestSubstring(String s) &#123;</span><br><span class="line">        int n = s.length();</span><br><span class="line">        Set&lt;Character&gt; set = new HashSet&lt;&gt;();</span><br><span class="line">        int ans = 0, i = 0, j = 0;</span><br><span class="line">        while (i &lt; n &amp;&amp; j &lt; n) &#123;</span><br><span class="line">            // try to extend the range [i, j]</span><br><span class="line">            if (!set.contains(s.charAt(j)))&#123;</span><br><span class="line">                set.add(s.charAt(j++));</span><br><span class="line">                ans = Math.max(ans, j - i);</span><br><span class="line">            &#125;</span><br><span class="line">            else &#123;</span><br><span class="line">                set.remove(s.charAt(i++));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>方法3 </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">public class Solution &#123;</span><br><span class="line">    public int lengthOfLongestSubstring(String s) &#123;</span><br><span class="line">        int n = s.length(), ans = 0;</span><br><span class="line">        Map&lt;Character, Integer&gt; map = new HashMap&lt;&gt;(); // current index of character</span><br><span class="line">        // try to extend the range [i, j]</span><br><span class="line">        for (int j = 0, i = 0; j &lt; n; j++) &#123;</span><br><span class="line">            if (map.containsKey(s.charAt(j))) &#123;</span><br><span class="line">                i = Math.max(map.get(s.charAt(j)), i);</span><br><span class="line">            &#125;</span><br><span class="line">            ans = Math.max(ans, j - i + 1);</span><br><span class="line">            map.put(s.charAt(j), j + 1);</span><br><span class="line">        &#125;</span><br><span class="line">        return ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="快速排序"><a href="#快速排序" class="headerlink" title="快速排序"></a>快速排序</h3><p>swift版本</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">func quicksort&lt;T: Comparable&gt;(_ a: [T]) -&gt; [T] &#123;</span><br><span class="line">  guard a.count &gt; 1 else &#123; return a &#125;</span><br><span class="line"></span><br><span class="line">  let pivot = a[a.count/2]</span><br><span class="line">  let less = a.filter &#123; $0 &lt; pivot &#125;</span><br><span class="line">  let equal = a.filter &#123; $0 == pivot &#125;</span><br><span class="line">  let greater = a.filter &#123; $0 &gt; pivot &#125;</span><br><span class="line"></span><br><span class="line">  return quicksort(less) + equal + quicksort(greater)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>C++版本</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">// 对arr[l...r]部分进行partition操作</span><br><span class="line">// 返回p, 使得arr[l...p-1] &lt; arr[p] ; arr[p+1...r] &gt; arr[p]</span><br><span class="line">template &lt;typename T&gt;</span><br><span class="line">int _partition(T arr[], int l, int r)&#123;</span><br><span class="line"></span><br><span class="line">    // 随机在arr[l...r]的范围中, 选择一个数值作为标定点pivot</span><br><span class="line">    swap( arr[l] , arr[rand()%(r-l+1)+l] );</span><br><span class="line"></span><br><span class="line">    T v = arr[l];</span><br><span class="line">    int j = l;</span><br><span class="line">    for( int i = l + 1 ; i &lt;= r ; i ++ )</span><br><span class="line">        if( arr[i] &lt; v )&#123;</span><br><span class="line">            j ++;</span><br><span class="line">            swap( arr[j] , arr[i] );</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    swap( arr[l] , arr[j]);</span><br><span class="line"></span><br><span class="line">    return j;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 对arr[l...r]部分进行快速排序</span><br><span class="line">template &lt;typename T&gt;</span><br><span class="line">void _quickSort(T arr[], int l, int r)&#123;</span><br><span class="line"></span><br><span class="line">    // 对于小规模数组, 使用插入排序进行优化</span><br><span class="line">    if( r - l &lt;= 15 )&#123;</span><br><span class="line">        insertionSort(arr,l,r);</span><br><span class="line">        return;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    int p = _partition(arr, l, r);</span><br><span class="line">    _quickSort(arr, l, p-1 );</span><br><span class="line">    _quickSort(arr, p+1, r);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/" data-id="clvq0zjcb000r7qqt6trsefu2" data-title="LeetCode" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-SQLite - C:C++" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/23/SQLite%20-%20C:C++/" class="article-date">
+  <time class="dt-published" datetime="2018-05-23T07:25:37.000Z" itemprop="datePublished">2018-05-23</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/05/23/SQLite%20-%20C:C++/">SQLite - C/C++</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>基于 <a target="_blank" rel="noopener" href="http://www.runoob.com/sqlite/sqlite-c-cpp.html">菜鸟</a> 整理</p>
+</blockquote>
+<p>要了解更多细节，请查看 SQLite <a target="_blank" rel="noopener" href="http://www.sqlite.org/c3ref/intro.html">官方文档1</a>, <a target="_blank" rel="noopener" href="http://www.sqlite.org/cintro.html">官方文档2</a>。</p>
+<style>table th:first-of-type { width: 20px;}</style>
+
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th>API &amp; 描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>sqlite3_open(const char *filename, sqlite3 **ppDb)<br>该例程打开一个指向 SQLite 数据库文件的连接，返回一个用于其他 SQLite 程序的数据库连接对象。<br>如果 filename 参数是 NULL 或 ‘:memory:’，那么 sqlite3_open() 将会在 RAM 中创建一个内存数据库，这只会在 session 的有效时间内持续。<br>如果文件名 filename 不为 NULL，那么 sqlite3_open() 将使用这个参数值尝试打开数据库文件。如果该名称的文件不存在，sqlite3_open() 将创建一个新的命名为该名称的数据库文件并打开。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>sqlite3_exec(sqlite3*, const char *sql, sqlite_callback, void *data, char **errmsg)<br>该例程提供了一个执行 SQL 命令的快捷方式，SQL 命令由 sql 参数提供，可以由多个 SQL 命令组成。<br>在这里，第一个参数 sqlite3 是打开的数据库对象，sqlite_callback 是一个回调，data 作为其第一个参数，errmsg 将被返回用来获取程序生成的任何错误。<br>sqlite3_exec() 程序解析并执行由 sql 参数所给的每个命令，直到字符串结束或者遇到错误为止。</td>
+</tr>
+<tr>
+<td>3</td>
+<td>sqlite3_close(sqlite3*)<br>该例程关闭之前调用 sqlite3_open() 打开的数据库连接。所有与连接相关的语句都应在连接关闭之前完成。<br>如果还有查询没有完成，sqlite3_close() 将返回 SQLITE_BUSY 禁止关闭的错误消息。</td>
+</tr>
+</tbody></table>
+<h2 id="连接数据库"><a href="#连接数据库" class="headerlink" title="连接数据库"></a>连接数据库</h2><p>下面的 C 代码段显示了如何连接到一个现有的数据库。如果数据库不存在，那么它就会被创建，最后将返回一个数据库对象。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;sqlite3.h&gt;</span><br><span class="line"></span><br><span class="line">int main(int argc, char* argv[])</span><br><span class="line">&#123;</span><br><span class="line">   sqlite3 *db;</span><br><span class="line">   char *zErrMsg = 0;</span><br><span class="line">   int rc;</span><br><span class="line"></span><br><span class="line">   rc = sqlite3_open(&quot;test.db&quot;, &amp;db);</span><br><span class="line"></span><br><span class="line">   if( rc )&#123;</span><br><span class="line">      fprintf(stderr, &quot;Can&#x27;t open database: %s\n&quot;, sqlite3_errmsg(db));</span><br><span class="line">      exit(0);</span><br><span class="line">   &#125;else&#123;</span><br><span class="line">      fprintf(stderr, &quot;Opened database successfully\n&quot;);</span><br><span class="line">   &#125;</span><br><span class="line">   sqlite3_close(db);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>现在，让我们来编译和运行上面的程序，在当前目录中创建我们的数据库 test.db。您可以根据需要改变路径。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$gcc test.c -l sqlite3</span><br><span class="line">$./a.out</span><br><span class="line">Opened database successfully</span><br></pre></td></tr></table></figure>
+<p>如果要使用 C++ 源代码，可以按照下列所示编译代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$g++ test.c -l sqlite3</span><br></pre></td></tr></table></figure>
+
+<p>在这里，把我们的程序链接上 sqlite3 库，以便向 C 程序提供必要的函数。这将在您的目录下创建一个数据库文件 test.db，您将得到如下结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-rwxr-xr-x. 1 root root 7383 May  8 02:06 a.out</span><br><span class="line">-rw-r--r--. 1 root root  323 May  8 02:05 test.c</span><br><span class="line">-rw-r--r--. 1 root root    0 May  8 02:06 test.db</span><br></pre></td></tr></table></figure>
+<h2 id="创建表"><a href="#创建表" class="headerlink" title="创建表"></a>创建表</h2><p>下面的 C 代码段将用于在先前创建的数据库中创建一个表：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;stdlib.h&gt;</span><br><span class="line">#include &lt;sqlite3.h&gt; </span><br><span class="line"></span><br><span class="line">static int callback(void *NotUsed, int argc, char **argv, char **azColName)&#123;</span><br><span class="line">   int i;</span><br><span class="line">   for(i=0; i&lt;argc; i++)&#123;</span><br><span class="line">      printf(&quot;%s = %s\n&quot;, azColName[i], argv[i] ? argv[i] : &quot;NULL&quot;);</span><br><span class="line">   &#125;</span><br><span class="line">   printf(&quot;\n&quot;);</span><br><span class="line">   return 0;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">int main(int argc, char* argv[])</span><br><span class="line">&#123;</span><br><span class="line">   sqlite3 *db;</span><br><span class="line">   char *zErrMsg = 0;</span><br><span class="line">   int  rc;</span><br><span class="line">   char *sql;</span><br><span class="line"></span><br><span class="line">   /* Open database */</span><br><span class="line">   rc = sqlite3_open(&quot;test.db&quot;, &amp;db);</span><br><span class="line">   if( rc )&#123;</span><br><span class="line">      fprintf(stderr, &quot;Can&#x27;t open database: %s\n&quot;, sqlite3_errmsg(db));</span><br><span class="line">      exit(0);</span><br><span class="line">   &#125;else&#123;</span><br><span class="line">      fprintf(stdout, &quot;Opened database successfully\n&quot;);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   /* Create SQL statement */</span><br><span class="line">   sql = &quot;CREATE TABLE COMPANY(&quot;  \</span><br><span class="line">         &quot;ID INT PRIMARY KEY     NOT NULL,&quot; \</span><br><span class="line">         &quot;NAME           TEXT    NOT NULL,&quot; \</span><br><span class="line">         &quot;AGE            INT     NOT NULL,&quot; \</span><br><span class="line">         &quot;ADDRESS        CHAR(50),&quot; \</span><br><span class="line">         &quot;SALARY         REAL );&quot;;</span><br><span class="line"></span><br><span class="line">   /* Execute SQL statement */</span><br><span class="line">   rc = sqlite3_exec(db, sql, callback, 0, &amp;zErrMsg);</span><br><span class="line">   if( rc != SQLITE_OK )&#123;</span><br><span class="line">   fprintf(stderr, &quot;SQL error: %s\n&quot;, zErrMsg);</span><br><span class="line">      sqlite3_free(zErrMsg);</span><br><span class="line">   &#125;else&#123;</span><br><span class="line">      fprintf(stdout, &quot;Table created successfully\n&quot;);</span><br><span class="line">   &#125;</span><br><span class="line">   sqlite3_close(db);</span><br><span class="line">   return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述程序编译和执行时，它会在 test.db 文件中创建 COMPANY 表，最终文件列表如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-rwxr-xr-x. 1 root root 9567 May  8 02:31 a.out</span><br><span class="line">-rw-r--r--. 1 root root 1207 May  8 02:31 test.c</span><br><span class="line">-rw-r--r--. 1 root root 3072 May  8 02:31 test.db</span><br></pre></td></tr></table></figure>
+
+<h2 id="INSERT-操作"><a href="#INSERT-操作" class="headerlink" title="INSERT 操作"></a>INSERT 操作</h2><p>下面的 C 代码段显示了如何在上面创建的 COMPANY 表中创建记录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;stdlib.h&gt;</span><br><span class="line">#include &lt;sqlite3.h&gt;</span><br><span class="line"></span><br><span class="line">static int callback(void *NotUsed, int argc, char **argv, char **azColName)&#123;</span><br><span class="line">   int i;</span><br><span class="line">   for(i=0; i&lt;argc; i++)&#123;</span><br><span class="line">      printf(&quot;%s = %s\n&quot;, azColName[i], argv[i] ? argv[i] : &quot;NULL&quot;);</span><br><span class="line">   &#125;</span><br><span class="line">   printf(&quot;\n&quot;);</span><br><span class="line">   return 0;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">int main(int argc, char* argv[])</span><br><span class="line">&#123;</span><br><span class="line">   sqlite3 *db;</span><br><span class="line">   char *zErrMsg = 0;</span><br><span class="line">   int rc;</span><br><span class="line">   char *sql;</span><br><span class="line"></span><br><span class="line">   /* Open database */</span><br><span class="line">   rc = sqlite3_open(&quot;test.db&quot;, &amp;db);</span><br><span class="line">   if( rc )&#123;</span><br><span class="line">      fprintf(stderr, &quot;Can&#x27;t open database: %s\n&quot;, sqlite3_errmsg(db));</span><br><span class="line">      exit(0);</span><br><span class="line">   &#125;else&#123;</span><br><span class="line">      fprintf(stderr, &quot;Opened database successfully\n&quot;);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   /* Create SQL statement */</span><br><span class="line">   sql = &quot;INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) &quot;  \</span><br><span class="line">         &quot;VALUES (1, &#x27;Paul&#x27;, 32, &#x27;California&#x27;, 20000.00 ); &quot; \</span><br><span class="line">         &quot;INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) &quot;  \</span><br><span class="line">         &quot;VALUES (2, &#x27;Allen&#x27;, 25, &#x27;Texas&#x27;, 15000.00 ); &quot;     \</span><br><span class="line">         &quot;INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY)&quot; \</span><br><span class="line">         &quot;VALUES (3, &#x27;Teddy&#x27;, 23, &#x27;Norway&#x27;, 20000.00 );&quot; \</span><br><span class="line">         &quot;INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY)&quot; \</span><br><span class="line">         &quot;VALUES (4, &#x27;Mark&#x27;, 25, &#x27;Rich-Mond &#x27;, 65000.00 );&quot;;</span><br><span class="line"></span><br><span class="line">   /* Execute SQL statement */</span><br><span class="line">   rc = sqlite3_exec(db, sql, callback, 0, &amp;zErrMsg);</span><br><span class="line">   if( rc != SQLITE_OK )&#123;</span><br><span class="line">      fprintf(stderr, &quot;SQL error: %s\n&quot;, zErrMsg);</span><br><span class="line">      sqlite3_free(zErrMsg);</span><br><span class="line">   &#125;else&#123;</span><br><span class="line">      fprintf(stdout, &quot;Records created successfully\n&quot;);</span><br><span class="line">   &#125;</span><br><span class="line">   sqlite3_close(db);</span><br><span class="line">   return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述程序编译和执行时，它会在 COMPANY 表中创建给定记录，并会显示以下两行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Opened database successfully</span><br><span class="line">Records created successfully</span><br></pre></td></tr></table></figure>
+<h2 id="SELECT-操作"><a href="#SELECT-操作" class="headerlink" title="SELECT 操作"></a>SELECT 操作</h2><p>在我们开始讲解获取记录的实例之前，让我们先了解下回调函数的一些细节，这将在我们的实例使用到。这个回调提供了一个从 SELECT 语句获得结果的方式。它声明如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">typedef int (*sqlite3_callback)(</span><br><span class="line">void*,    /* Data provided in the 4th argument of sqlite3_exec() */</span><br><span class="line">int,      /* The number of columns in row */</span><br><span class="line">char**,   /* An array of strings representing fields in the row */</span><br><span class="line">char**    /* An array of strings representing column names */</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>如果上面的回调在 sqlite_exec() 程序中作为第三个参数，那么 SQLite 将为 SQL 参数内执行的每个 SELECT 语句中处理的每个记录调用这个回调函数。<br>下面的 C 代码段显示了如何从前面创建的 COMPANY 表中获取并显示记录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;stdlib.h&gt;</span><br><span class="line">#include &lt;sqlite3.h&gt;</span><br><span class="line"></span><br><span class="line">static int callback(void *data, int argc, char **argv, char **azColName)&#123;</span><br><span class="line">   int i;</span><br><span class="line">   fprintf(stderr, &quot;%s: &quot;, (const char*)data);</span><br><span class="line">   for(i=0; i&lt;argc; i++)&#123;</span><br><span class="line">      printf(&quot;%s = %s\n&quot;, azColName[i], argv[i] ? argv[i] : &quot;NULL&quot;);</span><br><span class="line">   &#125;</span><br><span class="line">   printf(&quot;\n&quot;);</span><br><span class="line">   return 0;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">int main(int argc, char* argv[])</span><br><span class="line">&#123;</span><br><span class="line">   sqlite3 *db;</span><br><span class="line">   char *zErrMsg = 0;</span><br><span class="line">   int rc;</span><br><span class="line">   char *sql;</span><br><span class="line">   const char* data = &quot;Callback function called&quot;;</span><br><span class="line"></span><br><span class="line">   /* Open database */</span><br><span class="line">   rc = sqlite3_open(&quot;test.db&quot;, &amp;db);</span><br><span class="line">   if( rc )&#123;</span><br><span class="line">      fprintf(stderr, &quot;Can&#x27;t open database: %s\n&quot;, sqlite3_errmsg(db));</span><br><span class="line">      exit(0);</span><br><span class="line">   &#125;else&#123;</span><br><span class="line">      fprintf(stderr, &quot;Opened database successfully\n&quot;);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   /* Create SQL statement */</span><br><span class="line">   sql = &quot;SELECT * from COMPANY&quot;;</span><br><span class="line"></span><br><span class="line">   /* Execute SQL statement */</span><br><span class="line">   rc = sqlite3_exec(db, sql, callback, (void*)data, &amp;zErrMsg);</span><br><span class="line">   if( rc != SQLITE_OK )&#123;</span><br><span class="line">      fprintf(stderr, &quot;SQL error: %s\n&quot;, zErrMsg);</span><br><span class="line">      sqlite3_free(zErrMsg);</span><br><span class="line">   &#125;else&#123;</span><br><span class="line">      fprintf(stdout, &quot;Operation done successfully\n&quot;);</span><br><span class="line">   &#125;</span><br><span class="line">   sqlite3_close(db);</span><br><span class="line">   return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述程序编译和执行时，它会产生以下结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">Opened database successfully</span><br><span class="line">Callback function called: ID = 1</span><br><span class="line">NAME = Paul</span><br><span class="line">AGE = 32</span><br><span class="line">ADDRESS = California</span><br><span class="line">SALARY = 20000.0</span><br><span class="line"></span><br><span class="line">Callback function called: ID = 2</span><br><span class="line">NAME = Allen</span><br><span class="line">AGE = 25</span><br><span class="line">ADDRESS = Texas</span><br><span class="line">SALARY = 15000.0</span><br><span class="line"></span><br><span class="line">Callback function called: ID = 3</span><br><span class="line">NAME = Teddy</span><br><span class="line">AGE = 23</span><br><span class="line">ADDRESS = Norway</span><br><span class="line">SALARY = 20000.0</span><br><span class="line"></span><br><span class="line">Callback function called: ID = 4</span><br><span class="line">NAME = Mark</span><br><span class="line">AGE = 25</span><br><span class="line">ADDRESS = Rich-Mond</span><br><span class="line">SALARY = 65000.0</span><br><span class="line"></span><br><span class="line">Operation done successfully</span><br></pre></td></tr></table></figure>
+<h2 id="UPDATE-操作"><a href="#UPDATE-操作" class="headerlink" title="UPDATE 操作"></a>UPDATE 操作</h2><p>下面的 C 代码段显示了如何使用 UPDATE 语句来更新任何记录，然后从 COMPANY 表中获取并显示更新的记录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;stdlib.h&gt;</span><br><span class="line">#include &lt;sqlite3.h&gt; </span><br><span class="line"></span><br><span class="line">static int callback(void *data, int argc, char **argv, char **azColName)&#123;</span><br><span class="line">   int i;</span><br><span class="line">   fprintf(stderr, &quot;%s: &quot;, (const char*)data);</span><br><span class="line">   for(i=0; i&lt;argc; i++)&#123;</span><br><span class="line">      printf(&quot;%s = %s\n&quot;, azColName[i], argv[i] ? argv[i] : &quot;NULL&quot;);</span><br><span class="line">   &#125;</span><br><span class="line">   printf(&quot;\n&quot;);</span><br><span class="line">   return 0;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">int main(int argc, char* argv[])</span><br><span class="line">&#123;</span><br><span class="line">   sqlite3 *db;</span><br><span class="line">   char *zErrMsg = 0;</span><br><span class="line">   int rc;</span><br><span class="line">   char *sql;</span><br><span class="line">   const char* data = &quot;Callback function called&quot;;</span><br><span class="line"></span><br><span class="line">   /* Open database */</span><br><span class="line">   rc = sqlite3_open(&quot;test.db&quot;, &amp;db);</span><br><span class="line">   if( rc )&#123;</span><br><span class="line">      fprintf(stderr, &quot;Can&#x27;t open database: %s\n&quot;, sqlite3_errmsg(db));</span><br><span class="line">      exit(0);</span><br><span class="line">   &#125;else&#123;</span><br><span class="line">      fprintf(stderr, &quot;Opened database successfully\n&quot;);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   /* Create merged SQL statement */</span><br><span class="line">   sql = &quot;UPDATE COMPANY set SALARY = 25000.00 where ID=1; &quot; \</span><br><span class="line">         &quot;SELECT * from COMPANY&quot;;</span><br><span class="line"></span><br><span class="line">   /* Execute SQL statement */</span><br><span class="line">   rc = sqlite3_exec(db, sql, callback, (void*)data, &amp;zErrMsg);</span><br><span class="line">   if( rc != SQLITE_OK )&#123;</span><br><span class="line">      fprintf(stderr, &quot;SQL error: %s\n&quot;, zErrMsg);</span><br><span class="line">      sqlite3_free(zErrMsg);</span><br><span class="line">   &#125;else&#123;</span><br><span class="line">      fprintf(stdout, &quot;Operation done successfully\n&quot;);</span><br><span class="line">   &#125;</span><br><span class="line">   sqlite3_close(db);</span><br><span class="line">   return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述程序编译和执行时，它会产生以下结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">Opened database successfully</span><br><span class="line">Callback function called: ID = 1</span><br><span class="line">NAME = Paul</span><br><span class="line">AGE = 32</span><br><span class="line">ADDRESS = California</span><br><span class="line">SALARY = 25000.0</span><br><span class="line"></span><br><span class="line">Callback function called: ID = 2</span><br><span class="line">NAME = Allen</span><br><span class="line">AGE = 25</span><br><span class="line">ADDRESS = Texas</span><br><span class="line">SALARY = 15000.0</span><br><span class="line"></span><br><span class="line">Callback function called: ID = 3</span><br><span class="line">NAME = Teddy</span><br><span class="line">AGE = 23</span><br><span class="line">ADDRESS = Norway</span><br><span class="line">SALARY = 20000.0</span><br><span class="line"></span><br><span class="line">Callback function called: ID = 4</span><br><span class="line">NAME = Mark</span><br><span class="line">AGE = 25</span><br><span class="line">ADDRESS = Rich-Mond</span><br><span class="line">SALARY = 65000.0</span><br><span class="line"></span><br><span class="line">Operation done successfully</span><br></pre></td></tr></table></figure>
+<h2 id="DELETE-操作"><a href="#DELETE-操作" class="headerlink" title="DELETE 操作"></a>DELETE 操作</h2><p>下面的 C 代码段显示了如何使用 DELETE 语句删除任何记录，然后从 COMPANY 表中获取并显示剩余的记录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;stdlib.h&gt;</span><br><span class="line">#include &lt;sqlite3.h&gt; </span><br><span class="line"></span><br><span class="line">static int callback(void *data, int argc, char **argv, char **azColName)&#123;</span><br><span class="line">   int i;</span><br><span class="line">   fprintf(stderr, &quot;%s: &quot;, (const char*)data);</span><br><span class="line">   for(i=0; i&lt;argc; i++)&#123;</span><br><span class="line">      printf(&quot;%s = %s\n&quot;, azColName[i], argv[i] ? argv[i] : &quot;NULL&quot;);</span><br><span class="line">   &#125;</span><br><span class="line">   printf(&quot;\n&quot;);</span><br><span class="line">   return 0;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">int main(int argc, char* argv[])</span><br><span class="line">&#123;</span><br><span class="line">   sqlite3 *db;</span><br><span class="line">   char *zErrMsg = 0;</span><br><span class="line">   int rc;</span><br><span class="line">   char *sql;</span><br><span class="line">   const char* data = &quot;Callback function called&quot;;</span><br><span class="line"></span><br><span class="line">   /* Open database */</span><br><span class="line">   rc = sqlite3_open(&quot;test.db&quot;, &amp;db);</span><br><span class="line">   if( rc )&#123;</span><br><span class="line">      fprintf(stderr, &quot;Can&#x27;t open database: %s\n&quot;, sqlite3_errmsg(db));</span><br><span class="line">      exit(0);</span><br><span class="line">   &#125;else&#123;</span><br><span class="line">      fprintf(stderr, &quot;Opened database successfully\n&quot;);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   /* Create merged SQL statement */</span><br><span class="line">   sql = &quot;DELETE from COMPANY where ID=2; &quot; \</span><br><span class="line">         &quot;SELECT * from COMPANY&quot;;</span><br><span class="line"></span><br><span class="line">   /* Execute SQL statement */</span><br><span class="line">   rc = sqlite3_exec(db, sql, callback, (void*)data, &amp;zErrMsg);</span><br><span class="line">   if( rc != SQLITE_OK )&#123;</span><br><span class="line">      fprintf(stderr, &quot;SQL error: %s\n&quot;, zErrMsg);</span><br><span class="line">      sqlite3_free(zErrMsg);</span><br><span class="line">   &#125;else&#123;</span><br><span class="line">      fprintf(stdout, &quot;Operation done successfully\n&quot;);</span><br><span class="line">   &#125;</span><br><span class="line">   sqlite3_close(db);</span><br><span class="line">   return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述程序编译和执行时，它会产生以下结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">Opened database successfully</span><br><span class="line">Callback function called: ID = 1</span><br><span class="line">NAME = Paul</span><br><span class="line">AGE = 32</span><br><span class="line">ADDRESS = California</span><br><span class="line">SALARY = 20000.0</span><br><span class="line"></span><br><span class="line">Callback function called: ID = 3</span><br><span class="line">NAME = Teddy</span><br><span class="line">AGE = 23</span><br><span class="line">ADDRESS = Norway</span><br><span class="line">SALARY = 20000.0</span><br><span class="line"></span><br><span class="line">Callback function called: ID = 4</span><br><span class="line">NAME = Mark</span><br><span class="line">AGE = 25</span><br><span class="line">ADDRESS = Rich-Mond</span><br><span class="line">SALARY = 65000.0</span><br><span class="line"></span><br><span class="line">Operation done successfully</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/23/SQLite%20-%20C:C++/" data-id="clvq0zjc000097qqt5d0pgac3" data-title="SQLite - C/C++" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-SQlite" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/17/SQlite/" class="article-date">
+  <time class="dt-published" datetime="2018-05-17T06:33:11.000Z" itemprop="datePublished">2018-05-17</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/05/17/SQlite/">SQLite</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>最近要实现对SQLite的管理库，先记录如下：</p>
+<blockquote>
+<p>基于 <a target="_blank" rel="noopener" href="http://www.runoob.com/sqlite/">菜鸟</a> 整理</p>
+</blockquote>
+<h1 id="基本知识"><a href="#基本知识" class="headerlink" title="基本知识"></a>基本知识</h1><hr>
+<h2 id="建表"><a href="#建表" class="headerlink" title="建表"></a>建表</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE database_name.table_name(</span><br><span class="line">   column1 datatype  PRIMARY KEY(one or more columns),</span><br><span class="line">   column2 datatype,</span><br><span class="line">   column3 datatype,</span><br><span class="line">   .....</span><br><span class="line">   columnN datatype,</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="删表"><a href="#删表" class="headerlink" title="删表"></a>删表</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DROP TABLE database_name.table_name;</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="插入列"><a href="#插入列" class="headerlink" title="插入列"></a>插入列</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO TABLE_NAME [(column1, column2, column3,...columnN)]  </span><br><span class="line">VALUES (value1, value2, value3,...valueN);</span><br><span class="line"></span><br><span class="line">INSERT INTO TABLE_NAME VALUES (value1,value2,value3,...valueN);</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Update-语句"><a href="#Update-语句" class="headerlink" title="Update 语句"></a>Update 语句</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">UPDATE table_name</span><br><span class="line">SET column1 = value1, column2 = value2...., columnN = valueN</span><br><span class="line">WHERE [condition];</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Delete-语句"><a href="#Delete-语句" class="headerlink" title="Delete 语句"></a>Delete 语句</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">DELETE FROM table_name</span><br><span class="line">WHERE [condition];</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2, columnN FROM table_name;</span><br><span class="line"></span><br><span class="line">SELECT * FROM table_name;</span><br></pre></td></tr></table></figure>
+
+
+<h1 id="子句"><a href="#子句" class="headerlink" title="子句"></a>子句</h1><p>各个子句的排列顺序</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT</span><br><span class="line">FROM</span><br><span class="line">WHERE</span><br><span class="line">GROUP BY</span><br><span class="line">HAVING</span><br><span class="line">ORDER BY</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Where子句"><a href="#Where子句" class="headerlink" title="Where子句"></a>Where子句</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2, columnN </span><br><span class="line">FROM table_name</span><br><span class="line">WHERE [condition]</span><br></pre></td></tr></table></figure>
+<p>AND</p>
+<hr>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2, columnN </span><br><span class="line">FROM table_name</span><br><span class="line">WHERE [condition1] AND [condition2]...AND [conditionN];</span><br></pre></td></tr></table></figure>
+<p>OR</p>
+<hr>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2, columnN </span><br><span class="line">FROM table_name</span><br><span class="line">WHERE [condition1] OR [condition2]...OR [conditionN]</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Like-子句"><a href="#Like-子句" class="headerlink" title="Like 子句"></a>Like 子句</h2><p>SQLite 的 LIKE 运算符是用来匹配通配符指定模式的文本值。如果搜索表达式与模式表达式匹配，LIKE 运算符将返回真（true），也就是 1。这里有两个通配符与 LIKE 运算符一起使用：<br>百分号 （%）<br>下划线 （_）快速记忆  _ 代表就一个字符<br>百分号（%）代表零个、一个或多个数字或字符。下划线（_）代表一个单一的数字或字符。这些符号可以被组合使用。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_list </span><br><span class="line">FROM table_name</span><br><span class="line">WHERE column LIKE &#x27;XXXX%&#x27;</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Glob-子句"><a href="#Glob-子句" class="headerlink" title="Glob 子句"></a>Glob 子句</h2><p>Glob类似like，区别是like 不区分大小写，GLob区分大小写</p>
+<p>星号 （ * ）对应 百分号 （%）问号 （?）对应 下划线 （ _ ）</p>
+<hr>
+<h2 id="Limit-子句"><a href="#Limit-子句" class="headerlink" title="Limit 子句"></a>Limit 子句</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2, columnN </span><br><span class="line">FROM table_name</span><br><span class="line">LIMIT [no of rows]</span><br></pre></td></tr></table></figure>
+<hr>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2, columnN </span><br><span class="line">FROM table_name</span><br><span class="line">LIMIT [no of rows] OFFSET [row num]</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Order-By-子句"><a href="#Order-By-子句" class="headerlink" title="Order By 子句"></a>Order By 子句</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT column-list </span><br><span class="line">FROM table_name </span><br><span class="line">[WHERE condition] </span><br><span class="line">[ORDER BY column1, column2, .. columnN] [ASC | DESC];</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Group-By-子句"><a href="#Group-By-子句" class="headerlink" title="Group By 子句"></a>Group By 子句</h2><p>SQLite 的 GROUP BY 子句用于与 SELECT 语句一起使用，来对相同的数据进行分组。</p>
+<p>在 SELECT 语句中，GROUP BY 子句放在 WHERE 子句之后，放在 ORDER BY 子句之前。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">SELECT column-list</span><br><span class="line">FROM table_name</span><br><span class="line">WHERE [ conditions ]</span><br><span class="line">GROUP BY column1, column2....columnN</span><br><span class="line">ORDER BY column1, column2....columnN</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Having-子句"><a href="#Having-子句" class="headerlink" title="Having 子句"></a>Having 子句</h2><p>HAVING 子句允许指定条件来过滤将出现在最终结果中的分组结果。</p>
+<p>WHERE 子句在所选列上设置条件，而 HAVING 子句则在由 GROUP BY 子句创建的分组上设置条件。</p>
+<p>在一个查询中，HAVING 子句必须放在 GROUP BY 子句之后，必须放在 ORDER BY 子句之前。下面是包含 HAVING 子句的 SELECT 语句的语法：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2</span><br><span class="line">FROM table1, table2</span><br><span class="line">WHERE [ conditions ]</span><br><span class="line">GROUP BY column1, column2</span><br><span class="line">HAVING [ conditions ]</span><br><span class="line">ORDER BY column1, column2</span><br></pre></td></tr></table></figure>
+
+<h1 id="关键字"><a href="#关键字" class="headerlink" title="关键字"></a>关键字</h1><hr>
+<h2 id="Distinct-关键字"><a href="#Distinct-关键字" class="headerlink" title="Distinct 关键字"></a>Distinct 关键字</h2><p>DISTINCT 关键字与 SELECT 语句一起使用，来消除所有重复的记录，并只获取唯一一次记录。</p>
+<p>加了索引之后 distinct 比没加索引的 distinct 快。<br>加了索引之后 group by 比没加索引的 group by 快。<br>再来对比 ：distinct  和 group by</p>
+<p>不管是加不加索引 group by 都比 distinct 快</p>
+<p>distinct 和group by都需要排序，一样的结果集从执行计划的成本代价来看差距不大，但group by 还涉及到统计，所以应该需要准备工作。所以单纯从等价结果来说，选择distinct比较效率一些。</p>
+<p>1.数据列的所有数据都一样，即去重计数的结果为1时，用distinct最佳</p>
+<p>2.如果数据列唯一，没有相同数值，用group 最好</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT DISTINCT column1, column2,.....columnN </span><br><span class="line">FROM table_name</span><br><span class="line">WHERE [condition]</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="Autoincrement"><a href="#Autoincrement" class="headerlink" title="Autoincrement"></a>Autoincrement</h2><p>自增约束</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; CREATE TABLE COMPANY(</span><br><span class="line">   ID INTEGER PRIMARY KEY   AUTOINCREMENT,</span><br><span class="line">   NAME           TEXT      NOT NULL,</span><br><span class="line">   AGE            INT       NOT NULL,</span><br><span class="line">   ADDRESS        CHAR(50),</span><br><span class="line">   SALARY         REAL</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>在AUTOINCREMENT约束的字段没有赋值时，就会自动设定为最大的rowid+1，<br>自增字段只能是主键。</p>
+<h1 id="进阶"><a href="#进阶" class="headerlink" title="进阶"></a>进阶</h1><hr>
+<h2 id="PRAGMA"><a href="#PRAGMA" class="headerlink" title="PRAGMA"></a>PRAGMA</h2><p>SQLite 的 PRAGMA 命令是一个特殊的命令，可以用在 SQLite 环境内控制各种环境变量和状态标志。一个 PRAGMA 值可以被读取，也可以根据需求进行设置。</p>
+<p>pragma 修改的是预置的变量，不可以自定义变量</p>
+<p><a target="_blank" rel="noopener" href="http://www.sqlite.org/pragma.html#pragma_application_id">具体有哪些环境变量查看这里</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">要查询当前的 PRAGMA 值，只需要提供该 pragma 的名字：</span><br><span class="line"></span><br><span class="line">PRAGMA pragma_name;</span><br><span class="line"></span><br><span class="line">要为 PRAGMA 设置一个新的值，语法如下：</span><br><span class="line"></span><br><span class="line">PRAGMA pragma_name = value;</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="约束"><a href="#约束" class="headerlink" title="约束"></a>约束</h2><p>常用约束</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">NOT NULL 约束：确保某列不能有 NULL 值。</span><br><span class="line"></span><br><span class="line">DEFAULT 约束：当某列没有指定值时，为该列提供默认值。</span><br><span class="line"></span><br><span class="line">UNIQUE 约束：确保某列中的所有值是不同的。</span><br><span class="line"></span><br><span class="line">PRIMARY Key 约束：唯一标识数据库表中的各行/记录。</span><br><span class="line"></span><br><span class="line">CHECK 约束：CHECK 约束确保某列中的所有值满足一定条件。</span><br></pre></td></tr></table></figure>
+<p>针对check，写个栗子</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE COMPANY3(</span><br><span class="line">   ID INT PRIMARY KEY     NOT NULL,</span><br><span class="line">   NAME           TEXT    NOT NULL,</span><br><span class="line">   AGE            INT     NOT NULL,</span><br><span class="line">   ADDRESS        CHAR(50),</span><br><span class="line">   SALARY         REAL    CHECK(SALARY &gt; 0)</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>默认值</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE COMPANY(</span><br><span class="line">   ID INT PRIMARY KEY     NOT NULL,</span><br><span class="line">   NAME           TEXT    NOT NULL,</span><br><span class="line">   AGE            INT     NOT NULL,</span><br><span class="line">   ADDRESS        CHAR(50),</span><br><span class="line">   SALARY         REAL    DEFAULT 50000.00</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Joins"><a href="#Joins" class="headerlink" title="Joins"></a>Joins</h2><p>sqlite 支持的joins 有三种链接</p>
+<h3 id="交叉连接-CROSS-JOIN"><a href="#交叉连接-CROSS-JOIN" class="headerlink" title="交叉连接 - CROSS JOIN"></a>交叉连接 - CROSS JOIN</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">如果不带WHERE条件子句，它将会返回被连接的两个表的笛卡尔积，返回结果的行数等于两个表行数的乘积</span><br></pre></td></tr></table></figure>
+
+<h3 id="内连接-INNER-JOIN"><a href="#内连接-INNER-JOIN" class="headerlink" title="内连接 - INNER JOIN"></a>内连接 - INNER JOIN</h3><p>INNER JOIN 产生的结果是AB的交集</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM TableA INNER JOIN TableB ON TableA.name = TableB.name</span><br></pre></td></tr></table></figure>
+
+<h3 id="外连接-OUTER-JOIN"><a href="#外连接-OUTER-JOIN" class="headerlink" title="外连接 - OUTER JOIN"></a>外连接 - OUTER JOIN</h3><p>LEFT [OUTER] JOIN   产生表A的完全集，而B表中匹配的则有值，没有匹配的则以null值取代。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM TableA LEFT OUTER JOIN TableB ON TableA.name = TableB.name</span><br></pre></td></tr></table></figure>
+<p>RIGHT [OUTER] JOIN  不支持<br>FULL [OUTER] JOINs 不支持  </p>
+<hr>
+<h2 id="Unions-子句"><a href="#Unions-子句" class="headerlink" title="Unions 子句"></a>Unions 子句</h2><p>SQLite的 UNION 子句&#x2F;运算符用于合并两个或多个 SELECT 语句的结果，不返回任何重复的行。</p>
+<hr>
+<h2 id="别名"><a href="#别名" class="headerlink" title="别名"></a>别名</h2><p>可以暂时把表或列重命名为另一个名字，这被称为别名</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2....</span><br><span class="line">FROM table_name AS alias_name</span><br><span class="line">WHERE [condition];</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT sum(column) as alias_name</span><br><span class="line">FROM table_name</span><br><span class="line">WHERE [condition];</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="触发器（Trigger）"><a href="#触发器（Trigger）" class="headerlink" title="触发器（Trigger）"></a>触发器（Trigger）</h2><p>SQLite 触发器（Trigger）是数据库的回调函数，它会在指定的数据库事件发生时自动执行&#x2F;调用。</p>
+<p>SQLite 的触发器（Trigger）可以指定在特定的数据库表发生 DELETE、INSERT 或 UPDATE 时触发，或在一个或多个指定表的列发生更新时触发。<br>SQLite 只支持 FOR EACH ROW 触发器（Trigger），没有 FOR EACH STATEMENT 触发器（Trigger）。因此，明确指定 FOR EACH ROW 是可选的。<br>WHEN 子句和触发器（Trigger）动作可能访问使用表单 NEW.column-name 和 OLD.column-name 的引用插入、删除或更新的行元素，其中 column-name 是从与触发器关联的表的列的名称。<br>如果提供 WHEN 子句，则只针对 WHEN 子句为真的指定行执行 SQL 语句。如果没有提供 WHEN 子句，则针对所有行执行 SQL 语句。<br>BEFORE 或 AFTER 关键字决定何时执行触发器动作，决定是在关联行的插入、修改或删除之前或者之后执行触发器动作。<br>当触发器相关联的表删除时，自动删除触发器（Trigger）。<br>要修改的表必须存在于同一数据库中，作为触发器被附加的表或视图，且必须只使用 tablename，而不是 database.tablename。<br>一个特殊的 SQL 函数 RAISE() 可用于触发器程序内抛出异常。</p>
+<p>添加触发器</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">CREATE TRIGGER audit_log AFTER INSERT </span><br><span class="line">ON COMPANY</span><br><span class="line">BEGIN</span><br><span class="line">   INSERT INTO AUDIT(EMP_ID, ENTRY_DATE) VALUES (new.ID, datetime(&#x27;now&#x27;));</span><br><span class="line">END;</span><br></pre></td></tr></table></figure>
+
+<p>删除触发器</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DROP TRIGGER trigger_name;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="索引（Index）"><a href="#索引（Index）" class="headerlink" title="索引（Index）"></a>索引（Index）</h2><p>索引（Index）是一种特殊的查找表，数据库搜索引擎用来加快数据检索。简单地说，索引是一个指向表中数据的指针。一个数据库中的索引与一本书后边的索引是非常相似的。<br>索引有助于加快 SELECT 查询和 WHERE 子句，但它会减慢使用 UPDATE 和 INSERT 语句时的数据输入。索引可以创建或删除，但不会影响数据。<br>索引也可以是唯一的，与 UNIQUE 约束类似，在列上或列组合上防止重复条目。</p>
+<h3 id="创建索引"><a href="#创建索引" class="headerlink" title="创建索引"></a>创建索引</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX index_name ON table_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="单列索引"><a href="#单列索引" class="headerlink" title="单列索引"></a>单列索引</h3><p>单列索引是一个只基于表的一个列上创建的索引。基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX index_name</span><br><span class="line">ON table_name (column_name);</span><br></pre></td></tr></table></figure>
+
+<h3 id="唯一索引"><a href="#唯一索引" class="headerlink" title="唯一索引"></a>唯一索引</h3><p>使用唯一索引不仅是为了性能，同时也为了数据的完整性。唯一索引不允许任何重复的值插入到表中。基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CREATE UNIQUE INDEX index_name</span><br><span class="line">on table_name (column_name);</span><br></pre></td></tr></table></figure>
+
+<h3 id="组合索引"><a href="#组合索引" class="headerlink" title="组合索引"></a>组合索引</h3><p>组合索引是基于一个表的两个或多个列上创建的索引。基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX index_name</span><br><span class="line">on table_name (column1, column2);</span><br></pre></td></tr></table></figure>
+
+<p>是否要创建一个单列索引还是组合索引，要考虑到您在作为查询过滤条件的 WHERE 子句中使用非常频繁的列。<br>如果值使用到一个列，则选择使用单列索引。如果在作为过滤的 WHERE 子句中有两个或多个列经常使用，则选择使用组合索引。</p>
+<p>虽然索引的目的在于提高数据库的性能，但这里有几个情况需要避免使用索引。使用索引时，应重新考虑下列准则：</p>
+<ul>
+<li>索引不应该使用在较小的表上。</li>
+<li>索引不应该使用在有频繁的大批量的更新或插入操作的表上。</li>
+<li>索引不应该使用在含有大量的 NULL 值的列上。</li>
+<li>索引不应该使用在频繁操作的列上。</li>
+</ul>
+<h3 id="indexed-by-子句"><a href="#indexed-by-子句" class="headerlink" title="indexed by 子句"></a>indexed by 子句</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT|DELETE|UPDATE column1, column2...</span><br><span class="line">INDEXED BY (index_name)</span><br><span class="line">table_name</span><br><span class="line">WHERE (CONDITION);</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="Alter-命令"><a href="#Alter-命令" class="headerlink" title="Alter 命令"></a>Alter 命令</h2><p>在 SQLite 中，除了重命名表和在已有的表中添加列，ALTER TABLE 命令不支持其他操作。</p>
+<p>用来重命名已有的表的 ALTER TABLE 的基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE database_name.table_name RENAME TO new_table_name;</span><br></pre></td></tr></table></figure>
+<p>用来在已有的表中添加一个新的列的 ALTER TABLE 的基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE database_name.table_name ADD COLUMN column_def...;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="事务（Transaction）"><a href="#事务（Transaction）" class="headerlink" title="事务（Transaction）"></a>事务（Transaction）</h2><p>事务（Transaction）是一个对数据库执行工作单元。事务（Transaction）是以逻辑顺序完成的工作单位或序列，可以是由用户手动操作完成，也可以是由某种数据库程序自动完成。<br>事务（Transaction）是指一个或多个更改数据库的扩展。例如，如果您正在创建一个记录或者更新一个记录或者从表中删除一个记录，那么您正在该表上执行事务。重要的是要控制事务以确保数据的完整性和处理数据库错误。<br>实际上，您可以把许多的 SQLite 查询联合成一组，把所有这些放在一起作为事务的一部分进行执行。</p>
+<p>事务的属性<br>事务（Transaction）具有以下四个标准属性，通常根据首字母缩写为 ACID：</p>
+<ul>
+<li>原子性（Atomicity）：确保工作单位内的所有操作都成功完成，否则，事务会在出现故障时终止，之前的操作也会回滚到以前的状态。</li>
+<li>一致性（Consistency)：确保数据库在成功提交的事务上正确地改变状态。</li>
+<li>隔离性（Isolation）：使事务操作相互独立和透明。</li>
+<li>持久性（Durability）：确保已提交事务的结果或效果在系统发生故障的情况下仍然存在</li>
+</ul>
+<h3 id="事务控制"><a href="#事务控制" class="headerlink" title="事务控制"></a>事务控制</h3><p>使用下面的命令来控制事务：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">BEGIN TRANSACTION：开始事务处理。</span><br><span class="line">COMMIT：保存更改，或者可以使用 END TRANSACTION 命令。</span><br><span class="line">ROLLBACK：回滚所做的更改。</span><br></pre></td></tr></table></figure>
+
+<p>事务控制命令只与 DML 命令 INSERT、UPDATE 和 DELETE 一起使用。他们不能在创建表或删除表时使用，因为这些操作在数据库中是自动提交的。</p>
+<h3 id="BEGIN-TRANSACTION-命令"><a href="#BEGIN-TRANSACTION-命令" class="headerlink" title="BEGIN TRANSACTION 命令"></a>BEGIN TRANSACTION 命令</h3><p>事务（Transaction）可以使用 BEGIN TRANSACTION 命令或简单的 BEGIN 命令来启动。此类事务通常会持续执行下去，直到遇到下一个 COMMIT 或 ROLLBACK 命令。不过在数据库关闭或发生错误时，事务处理也会回滚。以下是启动一个事务的简单语法：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">BEGIN;</span><br><span class="line">or </span><br><span class="line">BEGIN TRANSACTION;</span><br></pre></td></tr></table></figure>
+
+<h3 id="COMMIT-命令"><a href="#COMMIT-命令" class="headerlink" title="COMMIT 命令"></a>COMMIT 命令</h3><p>COMMIT 命令是用于把事务调用的更改保存到数据库中的事务命令。<br>COMMIT 命令把自上次 COMMIT 或 ROLLBACK 命令以来的所有事务保存到数据库。<br>COMMIT 命令的语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">COMMIT;</span><br><span class="line">or</span><br><span class="line">END TRANSACTION;</span><br></pre></td></tr></table></figure>
+
+<h3 id="ROLLBACK-命令"><a href="#ROLLBACK-命令" class="headerlink" title="ROLLBACK 命令"></a>ROLLBACK 命令</h3><p>ROLLBACK 命令是用于撤消尚未保存到数据库的事务的事务命令。<br>ROLLBACK 命令只能用于撤销自上次发出 COMMIT 或 ROLLBACK 命令以来的事务。<br>ROLLBACK 命令的语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ROLLBACK;</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="SQLite-子查询"><a href="#SQLite-子查询" class="headerlink" title="SQLite 子查询"></a>SQLite 子查询</h2><p>子查询或内部查询或嵌套查询是在另一个 SQLite 查询内嵌入在 WHERE 子句中的查询。</p>
+<p>使用子查询返回的数据将被用在主查询中作为条件，以进一步限制要检索的数据。<br>子查询可以与 SELECT、INSERT、UPDATE 和 DELETE 语句一起使用，可伴随着使用运算符如 &#x3D;、&lt;、&gt;、&gt;&#x3D;、&lt;&#x3D;、IN、BETWEEN 等。</p>
+<p>以下是子查询必须遵循的几个规则：</p>
+<ul>
+<li>子查询必须用括号括起来。</li>
+<li>子查询在 SELECT 子句中只能有一个列，除非在主查询中有多列，与子查询的所选列进行比较。</li>
+<li>ORDER BY 不能用在子查询中，虽然主查询可以使用 ORDER BY。可以在子查询中使用 GROUP BY，功能与 ORDER BY 相同。</li>
+<li>子查询返回多于一行，只能与多值运算符一起使用，如 IN 运算符。</li>
+<li>BETWEEN 运算符不能与子查询一起使用，但是，BETWEEN 可在子查询内使用。</li>
+</ul>
+<h3 id="SELECT-语句中的子查询使用"><a href="#SELECT-语句中的子查询使用" class="headerlink" title="SELECT 语句中的子查询使用"></a>SELECT 语句中的子查询使用</h3><p>子查询通常与 SELECT 语句一起使用。基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name [, column_name ]</span><br><span class="line">FROM   table1 [, table2 ]</span><br><span class="line">WHERE  column_name OPERATOR</span><br><span class="line">      (SELECT column_name [, column_name ]</span><br><span class="line">      FROM table1 [, table2 ]</span><br><span class="line">      [WHERE])</span><br></pre></td></tr></table></figure>
+<h4 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h4><p>假设 COMPANY 表有以下记录：</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>NAME</th>
+<th>AGE</th>
+<th>ADDRESS</th>
+<th>SALARY</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Paul</td>
+<td>32</td>
+<td>California</td>
+<td>20000.0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Allen</td>
+<td>25</td>
+<td>Texas</td>
+<td>15000.0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Teddy</td>
+<td>23</td>
+<td>Norway</td>
+<td>20000.0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Mark</td>
+<td>25</td>
+<td>Rich-Mond</td>
+<td>65000.0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>David</td>
+<td>27</td>
+<td>Texas</td>
+<td>85000.0</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Kim</td>
+<td>22</td>
+<td>South-Hall</td>
+<td>45000.0</td>
+</tr>
+<tr>
+<td>7</td>
+<td>James</td>
+<td>24</td>
+<td>Houston</td>
+<td>10000.0</td>
+</tr>
+</tbody></table>
+<p>现在，让我们检查 SELECT 语句中的子查询使用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT * </span><br><span class="line">     FROM COMPANY </span><br><span class="line">     WHERE ID IN (SELECT ID </span><br><span class="line">                  FROM COMPANY </span><br><span class="line">                  WHERE SALARY &gt; 45000) ;</span><br></pre></td></tr></table></figure>
+<p>这将产生以下结果:</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>NAME</th>
+<th>AGE</th>
+<th>ADDRESS</th>
+<th>SALARY</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>4</td>
+<td>Mark</td>
+<td>25</td>
+<td>Rich-Mond</td>
+<td>65000.0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>David</td>
+<td>27</td>
+<td>Texas</td>
+<td>85000.0</td>
+</tr>
+</tbody></table>
+<h3 id="INSERT-语句中的子查询使用"><a href="#INSERT-语句中的子查询使用" class="headerlink" title="INSERT 语句中的子查询使用"></a>INSERT 语句中的子查询使用</h3><p>子查询也可以与 INSERT 语句一起使用。INSERT 语句使用子查询返回的数据插入到另一个表中。在子查询中所选择的数据可以用任何字符、日期或数字函数修改。</p>
+<p>基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO table_name [ (column1 [, column2 ]) ]</span><br><span class="line">           SELECT [ *|column1 [, column2 ]</span><br><span class="line">           FROM table1 [, table2 ]</span><br><span class="line">           [ WHERE VALUE OPERATOR ]</span><br></pre></td></tr></table></figure>
+
+<h4 id="实例-1"><a href="#实例-1" class="headerlink" title="实例"></a>实例</h4><p>假设 COMPANY_BKP 的结构与 COMPANY 表相似，且可使用相同的 CREATE TABLE 进行创建，只是表名改为 COMPANY_BKP。</p>
+<p>现在把整个 COMPANY 表复制到 COMPANY_BKP，语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; INSERT INTO COMPANY_BKP</span><br><span class="line">     SELECT * FROM COMPANY </span><br><span class="line">     WHERE ID IN (SELECT ID </span><br><span class="line">                  FROM COMPANY) ;</span><br></pre></td></tr></table></figure>
+<h3 id="UPDATE-语句中的子查询使用"><a href="#UPDATE-语句中的子查询使用" class="headerlink" title="UPDATE 语句中的子查询使用"></a>UPDATE 语句中的子查询使用</h3><p>子查询可以与 UPDATE 语句结合使用。当通过 UPDATE 语句使用子查询时，表中单个或多个列被更新。</p>
+<p>基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">UPDATE table</span><br><span class="line">SET column_name = new_value</span><br><span class="line">[ WHERE OPERATOR [ VALUE ]</span><br><span class="line">   (SELECT COLUMN_NAME</span><br><span class="line">   FROM TABLE_NAME)</span><br><span class="line">   [ WHERE) ]</span><br></pre></td></tr></table></figure>
+<h4 id="实例-2"><a href="#实例-2" class="headerlink" title="实例"></a>实例</h4><p>假设，我们有 COMPANY_BKP 表，是 COMPANY 表的备份。</p>
+<p>下面的实例把 COMPANY 表中所有 AGE 大于或等于 27 的客户的 SALARY 更新为原来的 0.50 倍：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; UPDATE COMPANY</span><br><span class="line">     SET SALARY = SALARY * 0.50</span><br><span class="line">     WHERE AGE IN (SELECT AGE FROM COMPANY_BKP</span><br><span class="line">                   WHERE AGE &gt;= 27 );</span><br></pre></td></tr></table></figure>
+<p>这将影响两行，最后 COMPANY 表中的记录如下：</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>NAME</th>
+<th>AGE</th>
+<th>ADDRESS</th>
+<th>SALARY</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Paul</td>
+<td>32</td>
+<td>California</td>
+<td>10000.0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Allen</td>
+<td>25</td>
+<td>Texas</td>
+<td>15000.0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Teddy</td>
+<td>23</td>
+<td>Norway</td>
+<td>20000.0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Mark</td>
+<td>25</td>
+<td>Rich-Mond</td>
+<td>65000.0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>David</td>
+<td>27</td>
+<td>Texas</td>
+<td>42500.0</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Kim</td>
+<td>22</td>
+<td>South-Hall</td>
+<td>45000.0</td>
+</tr>
+<tr>
+<td>7</td>
+<td>James</td>
+<td>24</td>
+<td>Houston</td>
+<td>10000.0</td>
+</tr>
+</tbody></table>
+<h3 id="DELETE-语句中的子查询使用"><a href="#DELETE-语句中的子查询使用" class="headerlink" title="DELETE 语句中的子查询使用"></a>DELETE 语句中的子查询使用</h3><p>子查询可以与 DELETE 语句结合使用，就像上面提到的其他语句一样。</p>
+<p>基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">DELETE FROM TABLE_NAME</span><br><span class="line">[ WHERE OPERATOR [ VALUE ]</span><br><span class="line">   (SELECT COLUMN_NAME</span><br><span class="line">   FROM TABLE_NAME)</span><br><span class="line">   [ WHERE) ]</span><br></pre></td></tr></table></figure>
+<h4 id="实例-3"><a href="#实例-3" class="headerlink" title="实例"></a>实例</h4><p>假设，我们有 COMPANY_BKP 表，是 COMPANY 表的备份。<br>下面的实例删除 COMPANY 表中所有 AGE 大于或等于 27 的客户记录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; DELETE FROM COMPANY</span><br><span class="line">     WHERE AGE IN (SELECT AGE FROM COMPANY_BKP</span><br><span class="line">                   WHERE AGE &gt; 27 );</span><br></pre></td></tr></table></figure>
+<p>这将影响两行，最后 COMPANY 表中的记录如下：</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>NAME</th>
+<th>AGE</th>
+<th>ADDRESS</th>
+<th>SALARY</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2</td>
+<td>Allen</td>
+<td>25</td>
+<td>Texas</td>
+<td>15000.0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Teddy</td>
+<td>23</td>
+<td>Norway</td>
+<td>20000.0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Mark</td>
+<td>25</td>
+<td>Rich-Mond</td>
+<td>65000.0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>David</td>
+<td>27</td>
+<td>Texas</td>
+<td>42500.0</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Kim</td>
+<td>22</td>
+<td>South-Hall</td>
+<td>45000.0</td>
+</tr>
+<tr>
+<td>7</td>
+<td>James</td>
+<td>24</td>
+<td>Houston</td>
+<td>10000.0</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="SQLite-日期-时间"><a href="#SQLite-日期-时间" class="headerlink" title="SQLite 日期 &amp; 时间"></a>SQLite 日期 &amp; 时间</h2><p>SQLite 支持以下五个日期和时间函数：</p>
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th>函数</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>date(timestring, modifier, modifier, …)</td>
+<td>以 YYYY-MM-DD 格式返回日期。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>time(timestring, modifier, modifier, …)</td>
+<td>以 HH:MM:SS 格式返回时间。</td>
+</tr>
+<tr>
+<td>3</td>
+<td>datetime(timestring, modifier, modifier, …)</td>
+<td>以 YYYY-MM-DD HH:MM:SS 格式返回。</td>
+</tr>
+<tr>
+<td>4</td>
+<td>julianday(timestring, modifier, modifier, …)</td>
+<td>这将返回从格林尼治时间的公元前 4714 年 11 月 24 日正午算起的天数。</td>
+</tr>
+<tr>
+<td>5</td>
+<td>strftime(format, timestring, modifier, modifier, …)</td>
+<td>这将根据第一个参数指定的格式字符串返回格式化的日期。具体格式见下边讲解。</td>
+</tr>
+</tbody></table>
+<p>上述五个日期和时间函数把时间字符串作为参数。时间字符串后跟零个或多个 modifier 修饰符。strftime() 函数也可以把格式字符串 format 作为其第一个参数。下面将为您详细讲解不同类型的时间字符串和修饰符。</p>
+<h3 id="时间字符串"><a href="#时间字符串" class="headerlink" title="时间字符串"></a>时间字符串</h3><p>一个时间字符串可以采用下面任何一种格式：</p>
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th>时间字符串</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>YYYY-MM-DD</td>
+<td>2010-12-30</td>
+</tr>
+<tr>
+<td>2</td>
+<td>YYYY-MM-DD HH:MM</td>
+<td>2010-12-30 12:10</td>
+</tr>
+<tr>
+<td>3</td>
+<td>YYYY-MM-DD HH:MM:SS.SSS</td>
+<td>2010-12-30 12:10:04.100</td>
+</tr>
+<tr>
+<td>4</td>
+<td>MM-DD-YYYY HH:MM</td>
+<td>30-12-2010 12:10</td>
+</tr>
+<tr>
+<td>5</td>
+<td>HH:MM</td>
+<td>12:10</td>
+</tr>
+<tr>
+<td>6</td>
+<td>YYYY-MM-DDTHH:MM</td>
+<td>2010-12-30 12:10</td>
+</tr>
+<tr>
+<td>7</td>
+<td>HH:MM:SS</td>
+<td>12:10:01</td>
+</tr>
+<tr>
+<td>8</td>
+<td>YYYYMMDD HHMMSS</td>
+<td>20101230 121001</td>
+</tr>
+<tr>
+<td>9</td>
+<td>now</td>
+<td>2013-05-07</td>
+</tr>
+</tbody></table>
+<p>您可以使用 “T” 作为分隔日期和时间的文字字符。</p>
+<h3 id="修饰符（Modifier）"><a href="#修饰符（Modifier）" class="headerlink" title="修饰符（Modifier）"></a>修饰符（Modifier）</h3><p>时间字符串后边可跟着零个或多个的修饰符，这将改变有上述五个函数返回的日期和&#x2F;或时间。任何上述五大功能返回时间。修饰符应从左到右使用，下面列出了可在 SQLite 中使用的修饰符：</p>
+<ul>
+<li>NNN days</li>
+<li>NNN hours</li>
+<li>NNN minutes</li>
+<li>NNN.NNNN seconds</li>
+<li>NNN months</li>
+<li>NNN years</li>
+<li>start of month</li>
+<li>start of year</li>
+<li>start of day</li>
+<li>weekday N</li>
+<li>unixepoch</li>
+<li>localtime</li>
+<li>utc</li>
+</ul>
+<h3 id="格式化"><a href="#格式化" class="headerlink" title="格式化"></a>格式化</h3><p>SQLite 提供了非常方便的函数 strftime() 来格式化任何日期和时间。您可以使用以下的替换来格式化日期和时间：</p>
+<table>
+<thead>
+<tr>
+<th>替换</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>%d</td>
+<td>一月中的第几天，01-31</td>
+</tr>
+<tr>
+<td>%f</td>
+<td>带小数部分的秒，SS.SSS</td>
+</tr>
+<tr>
+<td>%H</td>
+<td>小时，00-23</td>
+</tr>
+<tr>
+<td>%j</td>
+<td>一年中的第几天，001-366</td>
+</tr>
+<tr>
+<td>%J</td>
+<td>儒略日数，DDDD.DDDD</td>
+</tr>
+<tr>
+<td>%m</td>
+<td>月，00-12</td>
+</tr>
+<tr>
+<td>%M</td>
+<td>分，00-59</td>
+</tr>
+<tr>
+<td>%s</td>
+<td>从 1970-01-01 算起的秒数</td>
+</tr>
+<tr>
+<td>%S</td>
+<td>秒，00-59</td>
+</tr>
+<tr>
+<td>%w</td>
+<td>一周中的第几天，0-6 (0 is Sunday)</td>
+</tr>
+<tr>
+<td>%W</td>
+<td>一年中的第几周，01-53</td>
+</tr>
+<tr>
+<td>%Y</td>
+<td>年，YYYY</td>
+</tr>
+<tr>
+<td>%%</td>
+<td>% symbol</td>
+</tr>
+</tbody></table>
+<h3 id="实例-4"><a href="#实例-4" class="headerlink" title="实例"></a>实例</h3><p>现在让我们使用 SQLite 提示符尝试不同的实例。下面是计算当前日期：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT date(&#x27;now&#x27;);</span><br><span class="line">2013-05-07</span><br></pre></td></tr></table></figure>
+
+<p>下面是计算当前月份的最后一天：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT date(&#x27;now&#x27;,&#x27;start of month&#x27;,&#x27;+1 month&#x27;,&#x27;-1 day&#x27;);</span><br><span class="line">2013-05-31</span><br></pre></td></tr></table></figure>
+<p>下面是计算给定 UNIX 时间戳 1092941466 的日期和时间：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT datetime(1092941466, &#x27;unixepoch&#x27;);</span><br><span class="line">2004-08-19 18:51:06</span><br></pre></td></tr></table></figure>
+<p>下面是计算给定 UNIX 时间戳 1092941466 相对本地时区的日期和时间：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT datetime(1092941466, &#x27;unixepoch&#x27;, &#x27;localtime&#x27;);</span><br><span class="line">2004-08-19 11:51:06</span><br></pre></td></tr></table></figure>
+<p>下面是计算当前的 UNIX 时间戳：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT strftime(&#x27;%s&#x27;,&#x27;now&#x27;);</span><br><span class="line">1367926057</span><br></pre></td></tr></table></figure>
+<p>下面是计算美国”独立宣言”签署以来的天数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT julianday(&#x27;now&#x27;) - julianday(&#x27;1776-07-04&#x27;);</span><br><span class="line">86504.4775830326</span><br></pre></td></tr></table></figure>
+<p>下面是计算从 2004 年某一特定时刻以来的秒数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT strftime(&#x27;%s&#x27;,&#x27;now&#x27;) - strftime(&#x27;%s&#x27;,&#x27;2004-01-01 02:34:56&#x27;);</span><br><span class="line">295001572</span><br></pre></td></tr></table></figure>
+<p>下面是计算当年 10 月的第一个星期二的日期：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT date(&#x27;now&#x27;,&#x27;start of year&#x27;,&#x27;+9 months&#x27;,&#x27;weekday 2&#x27;);</span><br><span class="line">2013-10-01</span><br></pre></td></tr></table></figure>
+<p>下面是计算从 UNIX 纪元算起的以秒为单位的时间（类似 strftime(‘%s’,’now’) ，不同的是这里有包括小数部分）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT (julianday(&#x27;now&#x27;) - 2440587.5)*86400.0;</span><br><span class="line">1367926077.12598</span><br></pre></td></tr></table></figure>
+<p>在 UTC 与本地时间值之间进行转换，当格式化日期时，使用 utc 或 localtime 修饰符，如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT time(&#x27;12:00&#x27;, &#x27;localtime&#x27;);</span><br><span class="line">05:00:00</span><br><span class="line"></span><br><span class="line">sqlite&gt;  SELECT time(&#x27;12:00&#x27;, &#x27;utc&#x27;);</span><br><span class="line">19:00:00</span><br></pre></td></tr></table></figure>
+
+<h2 id="常用函数"><a href="#常用函数" class="headerlink" title="常用函数"></a>常用函数</h2><p>QLite 有许多内置函数用于处理字符串或数字数据。下面列出了一些有用的 SQLite 内置函数，且所有函数都是大小写不敏感，这意味着您可以使用这些函数的小写形式或大写形式或混合形式。欲了解更多详情，请查看 SQLite 的官方文档：</p>
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th>函数 &amp; 描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>SQLite COUNT 函数<br>SQLite COUNT 聚集函数是用来计算一个数据库表中的行数。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>SQLite MAX 函数<br>SQLite MAX 聚合函数允许我们选择某列的最大值。</td>
+</tr>
+<tr>
+<td>3</td>
+<td>SQLite MIN 函数<br>SQLite MIN 聚合函数允许我们选择某列的最小值。</td>
+</tr>
+<tr>
+<td>4</td>
+<td>SQLite AVG 函数<br>SQLite AVG 聚合函数计算某列的平均值。</td>
+</tr>
+<tr>
+<td>5</td>
+<td>SQLite SUM 函数<br>SQLite SUM 聚合函数允许为一个数值列计算总和。</td>
+</tr>
+<tr>
+<td>6</td>
+<td>SQLite RANDOM 函数<br>SQLite RANDOM 函数返回一个介于 -9223372036854775808 和 +9223372036854775807 之间的伪随机整数。</td>
+</tr>
+<tr>
+<td>7</td>
+<td>SQLite ABS 函数<br>SQLite ABS 函数返回数值参数的绝对值。</td>
+</tr>
+<tr>
+<td>8</td>
+<td>SQLite UPPER 函数<br>SQLite UPPER 函数把字符串转换为大写字母。</td>
+</tr>
+<tr>
+<td>9</td>
+<td>SQLite LOWER 函数<br>SQLite LOWER 函数把字符串转换为小写字母。</td>
+</tr>
+<tr>
+<td>10</td>
+<td>SQLite LENGTH 函数<br>SQLite LENGTH 函数返回字符串的长度。</td>
+</tr>
+<tr>
+<td>11</td>
+<td>SQLite sqlite_version 函数<br>SQLite sqlite_version 函数返回 SQLite 库的版本。</td>
+</tr>
+</tbody></table>
+<p>在我们开始讲解这些函数实例之前，先假设 COMPANY 表有以下记录：</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>NAME</th>
+<th>AGE</th>
+<th>ADDRESS</th>
+<th>SALARY</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Paul</td>
+<td>32</td>
+<td>California</td>
+<td>20000.0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Allen</td>
+<td>25</td>
+<td>Texas</td>
+<td>15000.0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Teddy</td>
+<td>23</td>
+<td>Norway</td>
+<td>20000.0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Mark</td>
+<td>25</td>
+<td>Rich-Mond</td>
+<td>65000.0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>David</td>
+<td>27</td>
+<td>Texas</td>
+<td>85000.0</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Kim</td>
+<td>22</td>
+<td>South-Hall</td>
+<td>45000.0</td>
+</tr>
+<tr>
+<td>7</td>
+<td>James</td>
+<td>24</td>
+<td>Houston</td>
+<td>10000.0</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-COUNT-函数"><a href="#SQLite-COUNT-函数" class="headerlink" title="SQLite COUNT 函数"></a>SQLite COUNT 函数</h3><p>SQLite COUNT 聚集函数是用来计算一个数据库表中的行数。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT count(*) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>count(*)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>7</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-MAX-函数"><a href="#SQLite-MAX-函数" class="headerlink" title="SQLite MAX 函数"></a>SQLite MAX 函数</h3><p>SQLite MAX 聚合函数允许我们选择某列的最大值。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT max(salary) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>max(salary)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>85000.0</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-MIN-函数"><a href="#SQLite-MIN-函数" class="headerlink" title="SQLite MIN 函数"></a>SQLite MIN 函数</h3><p>SQLite MIN 聚合函数允许我们选择某列的最小值。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT min(salary) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>min(salary)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>10000.0</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-AVG-函数"><a href="#SQLite-AVG-函数" class="headerlink" title="SQLite AVG 函数"></a>SQLite AVG 函数</h3><p>SQLite AVG 聚合函数计算某列的平均值。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT avg(salary) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>avg(salary)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>37142.8571428572</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-SUM-函数"><a href="#SQLite-SUM-函数" class="headerlink" title="SQLite SUM 函数"></a>SQLite SUM 函数</h3><p>SQLite SUM 聚合函数允许为一个数值列计算总和。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT sum(salary) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>sum(salary)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>260000.0</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-RANDOM-函数"><a href="#SQLite-RANDOM-函数" class="headerlink" title="SQLite RANDOM 函数"></a>SQLite RANDOM 函数</h3><p>SQLite RANDOM 函数返回一个介于 -9223372036854775808 和 +9223372036854775807 之间的伪随机整数。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT random() AS Random;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>Random</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>5876796417670984050</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-ABS-函数"><a href="#SQLite-ABS-函数" class="headerlink" title="SQLite ABS 函数"></a>SQLite ABS 函数</h3><p>SQLite ABS 函数返回数值参数的绝对值。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT abs(5), abs(-15), abs(NULL), abs(0), abs(&quot;ABC&quot;);</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>abs(5)</th>
+<th>abs(-15)</th>
+<th>abs(NULL)</th>
+<th>abs(0)</th>
+<th>abs(“ABC”)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>5</td>
+<td>15</td>
+<td>&lt; null &gt;</td>
+<td>0</td>
+<td>0.0</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-UPPER-函数"><a href="#SQLite-UPPER-函数" class="headerlink" title="SQLite UPPER 函数"></a>SQLite UPPER 函数</h3><p>SQLite UPPER 函数把字符串转换为大写字母。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT upper(name) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>upper(name)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PAUL</td>
+</tr>
+<tr>
+<td>ALLEN</td>
+</tr>
+<tr>
+<td>TEDDY</td>
+</tr>
+<tr>
+<td>MARK</td>
+</tr>
+<tr>
+<td>DAVID</td>
+</tr>
+<tr>
+<td>KIM</td>
+</tr>
+<tr>
+<td>JAMES</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-LOWER-函数"><a href="#SQLite-LOWER-函数" class="headerlink" title="SQLite LOWER 函数"></a>SQLite LOWER 函数</h3><p>SQLite LOWER 函数把字符串转换为小写字母。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT lower(name) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>lower(name)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>paul</td>
+</tr>
+<tr>
+<td>allen</td>
+</tr>
+<tr>
+<td>teddy</td>
+</tr>
+<tr>
+<td>mark</td>
+</tr>
+<tr>
+<td>david</td>
+</tr>
+<tr>
+<td>kim</td>
+</tr>
+<tr>
+<td>james</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-LENGTH-函数"><a href="#SQLite-LENGTH-函数" class="headerlink" title="SQLite LENGTH 函数"></a>SQLite LENGTH 函数</h3><p>SQLite LENGTH 函数返回字符串的长度。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT name, length(name) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>NAME</th>
+<th>length(name)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Paul</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Allen</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Teddy</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Mark</td>
+<td>4</td>
+</tr>
+<tr>
+<td>David</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Kim</td>
+<td>3</td>
+</tr>
+<tr>
+<td>James</td>
+<td>5</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-sqlite-version-函数"><a href="#SQLite-sqlite-version-函数" class="headerlink" title="SQLite sqlite_version 函数"></a>SQLite sqlite_version 函数</h3><p>SQLite sqlite_version 函数返回 SQLite 库的版本。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT sqlite_version() AS &#x27;SQLite Version&#x27;;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>SQLite Version</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>3.6.20</td>
+</tr>
+</tbody></table>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/17/SQlite/" data-id="clvq0zjc1000a7qqtgixl8nb5" data-title="SQLite" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/http-www-runoob-com-sqlite/" rel="tag">http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-Shell脚本" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/13/Shell%E8%84%9A%E6%9C%AC/" class="article-date">
+  <time class="dt-published" datetime="2018-05-13T06:17:17.000Z" itemprop="datePublished">2018-05-13</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/05/13/Shell%E8%84%9A%E6%9C%AC/">Shell脚本</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>最近一段时间用的Cocoapods做项目组件化，意外的打开了以前不太注意的脚本大门，可以让工作更加方便自动化，现在记录如下：</p>
+</blockquote>
+<p> xcode 中的build phrase 用来控制项目的编译过程，你按下CMD+B或者CMD+R，他就按照从上到下的执行一遍，我想要在编译前或者编译后执行一些操作，就可以在合适的位置添加脚本，shell或者Python等都可以。</p>
+<p> xcode 内置了一些宏变量方便脚本,如下:<br> <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">BUILT_PRODUCTS_DIR:  build成功后的，最终产品路径－－可以在Build Settings参数的Per-configuration Build Products Path项里设置.</span><br><span class="line">TARGET_NAME: 目标工程名称</span><br><span class="line">SRCROOT:工程文件（比如Nuno.xcodeproj）的路径 </span><br><span class="line">CURRENT_PROJECT_VERSION:当前工程版本号</span><br><span class="line"></span><br><span class="line">其他</span><br><span class="line">PRODUCT_NAME</span><br><span class="line">SYMROOT</span><br><span class="line">BUILD_DIR</span><br><span class="line">BUILD_ROOT</span><br><span class="line">CONFIGURATION_BUILD_DIR</span><br><span class="line">CONFIGURATION_TEMP_DIR</span><br><span class="line">SDK_NAME</span><br><span class="line">CONFIGURATION</span><br><span class="line">TARGET_NAME</span><br><span class="line">EXECUTABLE_NAME</span><br><span class="line">IPHONEOS_DEPLOYMENT_TARGET</span><br><span class="line">ACTION</span><br><span class="line">CURRENTCONFIG_SIMULATOR_DIR</span><br><span class="line">CURRENTCONFIG_DEVICE_DIR</span><br></pre></td></tr></table></figure></p>
+<p>一个简单的shell脚本可以直接在当前路径下执行  .&#x2F;xxxx.sh, 执行前要赋权 chmod +x xxxx.sh</p>
+<p>如果要在全局要执行这个脚本，则要添加全局变量</p>
+<p>全局变量添加在 ~&#x2F;.bash_profile 下，其他好像不怎么用(就我目前所知😝)，写下你的文件路径 <code>export xxxx=&quot;/usr/local/bin/xxx&quot;</code></p>
+<p>这个文件可以是脚本文件，也可以是执行文件，然后执行 <code>source ~/.bash_profile</code>，就可以立即让这个路径生效，不然要重启，让系统读下这个文件。</p>
+<p>echo $PATH 显示当前PATH环境变量</p>
+<p>在Xcode中可以创建command line 工程，创建命令行工具，用C，Objective-c，C++都可以</p>
+<p>在C语言中调用shell脚本,可用int system(const char *command)这个函数，也有其他的<a target="_blank" rel="noopener" href="https://www.cnblogs.com/yxysuanfa/p/7142013.html">函数</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/13/Shell%E8%84%9A%E6%9C%AC/" data-id="clvq0zjc2000b7qqtg58dbthp" data-title="Shell脚本" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-静态库的拆分合并" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/03/%E9%9D%99%E6%80%81%E5%BA%93%E7%9A%84%E6%8B%86%E5%88%86%E5%90%88%E5%B9%B6/" class="article-date">
+  <time class="dt-published" datetime="2018-05-03T01:13:46.000Z" itemprop="datePublished">2018-05-03</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/05/03/%E9%9D%99%E6%80%81%E5%BA%93%E7%9A%84%E6%8B%86%E5%88%86%E5%90%88%E5%B9%B6/">静态库的拆分合并</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>由于公司的私有库其他部门不能访问，想要提供的话又不可能提供源码，一般以静态库的方式提供，所以这里记录下，pod打包静态的库相关信息</p>
+</blockquote>
+<p>Cocoapods 支持打包成动态库或者静态库，但是需要插件<a target="_blank" rel="noopener" href="https://github.com/CocoaPods/cocoapods-packager">cocoapods-packager</a></p>
+<p>可通过 gem安装</p>
+<p><code>sudo gem install cocoapods-packager</code></p>
+<p>cocoapods-packager 打包只需要依靠podspec文件即可，所以本地有没有源码文件没有关系。</p>
+<p>具体命令</p>
+<p><code>pod package xxxx.podspec</code></p>
+<p>这样顺利的话可以打包出一个framework动态库</p>
+<p>下面是这个插件的相关参数：</p>
+<pre><code>--force: 如果以前打包过的话，就覆盖同名文件
+--no-mangle:当这个pod有依赖其他pod时，插件会默认修改依赖的名称，以防止主工程也依赖了这个pod，但是版本不同的问题，添加这个参数就不会修改名称了。
+--embedded: 嵌入？
+--library: 静态库
+--dynamic: 动态库
+--bundle-identifier: 如果是framework的话可以，可以修改Bundle ID
+--exclude-deps: 是否把以来的pod打包进来
+--configuration: 打包配合，debug 或者 release, 默认release
+--subspecs: 要打包的子pod
+--spec-sources=默认肯定是从官方的repo仓库找代码仓库，如果是私有的话，就要在这里写明repo仓库地址了
+--verbose: 打印出脚本执行过程
+</code></pre>
+<p>栗子：</p>
+<pre><code>pod package CDChatList.podspec --no-mangle --library --exclude-deps --verbose --spec-sources=https://chdo.github.git,https://chdo.github2.git
+</code></pre>
+<p>打包完成后，会在当前目录得到个表明pod版本的文件夹，里面包含了，编译好的.a 文件，和各个架构的.o文件等，你可以直接使用这个.a 文件了。</p>
+<p>这个.o就是目标文件，.a就是把这些文件都集中到一起，你可以定制自己的.a文件，控制包含的架构，包含的依赖库等，相关命令记录如下：</p>
+<h2 id="查看-a包含架构"><a href="#查看-a包含架构" class="headerlink" title="查看.a包含架构"></a>查看.a包含架构</h2><p><code>lipo -info xxxx.a</code></p>
+<h2 id="按架构分离静态库"><a href="#按架构分离静态库" class="headerlink" title="按架构分离静态库"></a>按架构分离静态库</h2><p><code>lipo xxxx.a -thin armv7 -output xxxx.a</code></p>
+<h2 id="在当前目录拆分静态库为目标文件"><a href="#在当前目录拆分静态库为目标文件" class="headerlink" title="在当前目录拆分静态库为目标文件"></a>在当前目录拆分静态库为目标文件</h2><p><code>ar -x xxx.a</code></p>
+<h2 id="将目标文件合并为静态库"><a href="#将目标文件合并为静态库" class="headerlink" title="将目标文件合并为静态库"></a>将目标文件合并为静态库</h2><p><code>libtool -static -o xxxx.a  *.o</code></p>
+<h2 id="将不同架构静态库合并为通用静态库"><a href="#将不同架构静态库合并为通用静态库" class="headerlink" title="将不同架构静态库合并为通用静态库"></a>将不同架构静态库合并为通用静态库</h2><p><code>lipo -create xxxxx.a xxx.a -output XXX.a</code></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/03/%E9%9D%99%E6%80%81%E5%BA%93%E7%9A%84%E6%8B%86%E5%88%86%E5%90%88%E5%B9%B6/" data-id="clvq0zjcc000t7qqt6e8977xw" data-title="静态库的拆分合并" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-项目利用Cocoapods组件化" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/04/29/%E9%A1%B9%E7%9B%AE%E5%88%A9%E7%94%A8Cocoapods%E7%BB%84%E4%BB%B6%E5%8C%96/" class="article-date">
+  <time class="dt-published" datetime="2018-04-28T16:07:03.000Z" itemprop="datePublished">2018-04-29</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/04/29/%E9%A1%B9%E7%9B%AE%E5%88%A9%E7%94%A8Cocoapods%E7%BB%84%E4%BB%B6%E5%8C%96/">项目利用Cocoapods组件化</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>最近公司项目重构，准备利用Cocoapods组件化。<br>网上<a target="_blank" rel="noopener" href="http://blog.wtlucky.com/blog/2015/02/26/create-private-podspec/">这篇文章</a>已经说的非常好了，我也是参照这篇文章，不过也有一些小坑需要趟一下,所以整理如下。</p>
+</blockquote>
+<p>Cocoapods是非常好的项目依赖管理工具，类似的还有Carthage，不过一番权衡，还是用CP了。</p>
+<p>既然是公司项目肯定得建个私有库，将项目的不同部分合适的切分成不同的模块，有的模块还有父子依赖关系，再上传到私有库上，定期维护这些库就可以了，这样可以有效和划分人员和代码的职责，方便管理。</p>
+<p>最终，项目被分成了三个库，分别是A（工具库）、B（数据库）、C（一个复杂视图封装好的组件库），BC依赖于A，BC之间互相独立。</p>
+<p>下面是具体实现记录：</p>
+<h3 id="创建并设置一个私有的Spec-Repo"><a href="#创建并设置一个私有的Spec-Repo" class="headerlink" title="创建并设置一个私有的Spec Repo"></a>创建并设置一个私有的<code>Spec Repo</code></h3><p>上面的ABC就是我们的私有pods, 而<code>Spec Repo</code>就是私有的pods的集合仓库，地位等同于公共的Cocoapods仓库，等我们配置完成后，用命令<code>pod search XXXX</code>,就会依次搜索公共ocoapods仓库和我们的私有仓库。</p>
+<p><code>Spec Repo</code>本质是一个git仓库，仓库中保存着每一个私有pods的索引文件，索引文件记录了各个私有pods的关键信息，比如名称，代码地址，介绍之类的。</p>
+<p>首先建一个普通的私有仓库，一般放在公司的服务器上，可以取名叫某某公司的pods就行，让后告诉cocoapod这是我们的私有仓库</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pod repo add WTSpecs https://coding.net/wtlucky/WTSpecs.git</span><br></pre></td></tr></table></figure>
+
+<p>本地的<code>/Users/xxx/.cocoapods/repo/</code>文件夹下就会多出这个仓库了</p>
+<h3 id="创建Pod项目"><a href="#创建Pod项目" class="headerlink" title="创建Pod项目"></a>创建Pod项目</h3><p>pods集合仓库建好后，就开始逐个创建私有pods的仓库，因为所有的私有pod都依赖A仓库，所以要先搞A</p>
+<p>具体命令是<code>pod lib create A</code>, Cocoapods会根据你的设置创建好模板工程，让后就可以在模板里写代码了，</p>
+<p>pod的模板工程中包括以下的几个关键的文件或文件夹，<br><code>A/</code>,存放代码和资源的地方,里面包括<code>Class</code>,<code>Assets</code><br><code>A.podspec</code>,这个就是私有pod的身份证了，里面记录了这个pod的所有信息，当我们把这个pod提交到pods集合仓库时，本质就是提交这个podspec文件过去，不然pods集合仓库的空间根本不够用。<br><code>Example/</code>，这是在创建模板时，默认会建的文件夹，里面存放了依赖这个pod的demo工程，当让也可以用模板的，手动搞一个。</p>
+<p>首先看看podspec的内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">#</span><br><span class="line"># Be sure to run `pod lib lint A.podspec&#x27; to ensure this is a</span><br><span class="line"># valid spec before submitting.</span><br><span class="line">#</span><br><span class="line"># Any lines starting with a # are optional, but their use is encouraged</span><br><span class="line"># To learn more about a Podspec see https://guides.cocoapods.org/syntax/podspec.html</span><br><span class="line">#</span><br><span class="line"></span><br><span class="line">Pod::Spec.new do |s|</span><br><span class="line">  s.name             = &#x27;A&#x27;</span><br><span class="line">  s.version          = &#x27;0.1.0&#x27;</span><br><span class="line">  s.summary          = &#x27;A short description of A.&#x27;</span><br><span class="line"></span><br><span class="line"># This description is used to generate tags and improve search results.</span><br><span class="line">#   * Think: What does it do? Why did you write it? What is the focus?</span><br><span class="line">#   * Try to keep it short, snappy and to the point.</span><br><span class="line">#   * Write the description between the DESC delimiters below.</span><br><span class="line">#   * Finally, don&#x27;t worry about the indent, CocoaPods strips it!</span><br><span class="line"></span><br><span class="line">  s.description      = &lt;&lt;-DESC</span><br><span class="line">TODO: Add long description of the pod here.</span><br><span class="line">                       DESC</span><br><span class="line"></span><br><span class="line">  s.homepage         = &#x27;https://github.com/chdo002/A&#x27;</span><br><span class="line">  # s.screenshots     = &#x27;www.example.com/screenshots_1&#x27;, &#x27;www.example.com/screenshots_2&#x27;</span><br><span class="line">  s.license          = &#123; :type =&gt; &#x27;MIT&#x27;, :file =&gt; &#x27;LICENSE&#x27; &#125;</span><br><span class="line">  s.author           = &#123; &#x27;chdo002&#x27; =&gt; &#x27;1107661983@qq.com&#x27; &#125;</span><br><span class="line">  s.source           = &#123; :git =&gt; &#x27;https://github.com/chdo002/A.git&#x27;, :tag =&gt; s.version.to_s &#125;</span><br><span class="line">  # s.social_media_url = &#x27;https://twitter.com/&lt;TWITTER_USERNAME&gt;&#x27;</span><br><span class="line"></span><br><span class="line">  s.ios.deployment_target = &#x27;8.0&#x27;</span><br><span class="line"></span><br><span class="line">  s.source_files = &#x27;A/Classes/**/*&#x27;</span><br><span class="line">  </span><br><span class="line">  # s.resource_bundles = &#123;</span><br><span class="line">  #   &#x27;A&#x27; =&gt; [&#x27;A/Assets/*.png&#x27;]</span><br><span class="line">  # &#125;</span><br><span class="line"></span><br><span class="line">  # s.public_header_files = &#x27;Pod/Classes/**/*.h&#x27;</span><br><span class="line">  # s.frameworks = &#x27;UIKit&#x27;, &#x27;MapKit&#x27;</span><br><span class="line">  # s.dependency &#x27;AFNetworking&#x27;, &#x27;~&gt; 2.3&#x27;</span><br><span class="line">end</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>拣几个关键的说下，</p>
+<p><code>s.name</code> 需要想好，最好有公司或者单位前缀，不然有大坑，而且不好改，后面细说<br><code>s.version</code>指定了这个pod的版本，非常重要。<br><code>s.homepage</code>和<code>s.source</code>，指定了仓库的地址，需要填写正确<br><code>s.source_files</code> 指向我们的代码路径，这里统配了这个路径下的所有文件<br><code>s.resource_bundles</code> 是说明我们的pod所包含的资源文件用的，在工程中，这些资源会被打包成bundle，放在这个pod名的framework下，所以不需要担心资源重名问题<br><code>s.frameworks</code>和<code>s.dependency</code>是pod的系统依赖和对其他pod的依赖，这里有点需要注意，如果依赖的其他pod是私有库的话，我们也不能在这里说明，需要在外部处理，见下文。</p>
+<p>这些属性的验证可以通过命令<code>pod lib lint</code>检查，实际上这个命令也是检查项目代码能否顺利编译。</p>
+<p>在哪写私有pod代码呢？</p>
+<p>打开<code>example</code>下的项目worksapce文件，可以看到在<code>pods</code>target下有个<code>Development Pods</code>文件夹，这个就是我们的私有pods存在的地方，删掉里面的<code>ReplaceMe.m</code>文件就可以了。</p>
+<p>当写完一部分代码，想要看看是否奏效时，在<code>example</code>路径下执行<code>pod install</code>更新工程，这个和普通的操作没有区别。</p>
+<p>一番编写调试完成，我们的私有pods没有问题的话，那就可以提交第一个版本了</p>
+<h3 id="向Spec-Repo提交podspec"><a href="#向Spec-Repo提交podspec" class="headerlink" title="向Spec Repo提交podspec"></a>向Spec Repo提交podspec</h3><p>向Spec Repo提交podspec之前还是需要几步操作，</p>
+<p>首先向pod远程仓库提交代码，用<code>pod lib lint</code>验证，可以加上<code>--verbose</code>查看具体的编译过程，这一步也是比较容易出错的地方，不过出错的原因都会详细说明。</p>
+<p>编译通过的话，就可以commit，并在这个commit打上个tag，tag要与这此pod的版本一致。</p>
+<p>比如我这次提交的pod版本是0.0.1，那我就要打个0.0.1的tag，<code>git tag -m &quot;A pod first Release&quot; &quot;0.0.1&quot;</code></p>
+<p>然后都push上去，<code>git  push origin --tags</code></p>
+<p>最后就是<code>pod repo push WTSpecs A.podspec </code>, 这一步也是会执行<code>pod lib lint</code>的，你也可以添加<code>--verbose</code>和其他参数。</p>
+<p>如果一切顺利，在本地路径<code>/Users/xx/.cocoapods/repo/WTSpecs</code>下可以发现我们提交的pod，这样你就可以在自己的工程引用这个私有的pod了</p>
+<h3 id="使用私有pod"><a href="#使用私有pod" class="headerlink" title="使用私有pod"></a>使用私有pod</h3><p>在<code>Podfile</code>中有两种方法可以引用，</p>
+<h4 id="方法一"><a href="#方法一" class="headerlink" title="方法一"></a>方法一</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">use_frameworks!</span><br><span class="line"></span><br><span class="line">target &#x27;Test_Example&#x27; do</span><br><span class="line">    # 这里可以单独指定这个私有pod的源</span><br><span class="line">  pod &#x27;A&#x27;, :source =&gt; &#x27;https://coding.net/wtlucky/podTestLibrary.git&#x27;</span><br><span class="line"></span><br><span class="line">end</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="方法二"><a href="#方法二" class="headerlink" title="方法二"></a>方法二</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">use_frameworks!</span><br><span class="line"></span><br><span class="line"># 在这里也可以全局指定pod源，这样在加载pod时，就会先从官方库中找，然后去我们的私有库中找，所以一定要把私有pod的名称和官方库中pod的名称区分开，最好先pod search确定下。</span><br><span class="line"></span><br><span class="line">source &#x27;https://github.com/CocoaPods/Specs.git&#x27;  # 官方库</span><br><span class="line">source &#x27;https://coding.net/wtlucky/podTestLibrary.git&#x27;   # 私有库</span><br><span class="line"></span><br><span class="line">target &#x27;Test_Example&#x27; do</span><br><span class="line">    # 这里可以单独指定这个私有pod的源</span><br><span class="line">  pod &#x27;A&#x27;</span><br><span class="line">  pod &#x27;FMDB&#x27;</span><br><span class="line"></span><br><span class="line">end</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="pod的更新。"><a href="#pod的更新。" class="headerlink" title="pod的更新。"></a>pod的更新。</h3><p>对pod<code>A</code>的维护更新，也是比较简单的。</p>
+<p>改完的代码提交一个commit，然后打上相应的tag，比如说<code>0.0.2</code>,让后都push上去，</p>
+<p>再<code>pod repo push WTSpecs A.podspec </code>即可</p>
+<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><h4 id="依赖问题"><a href="#依赖问题" class="headerlink" title="依赖问题"></a>依赖问题</h4><p>在做<code>B</code>pod时，因为依赖了私有库<code>A</code>，所以要写<code>s.dependency &#39;A&#39;</code>,同时这个pod还依赖了其他官方库中的pod，比如说<code>AFNetworking</code>。</p>
+<p>在<code>pod lib lint</code>或者<code>pod repo push</code>,就需要说明这个pod的源了，具体为什么不能再pods spec中指明各个依赖的源<a target="_blank" rel="noopener" href="https://github.com/CocoaPods/CocoaPods/issues/4921">还不清楚</a>,</p>
+<p>在命令后面加上</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--sources=https://github.com/CocoaPods/Specs.git,https://coding.net/wtlucky/podTestLibrary.git</span><br></pre></td></tr></table></figure>
+
+<p>就可以了，意思是要指明编译时的源</p>
+<h4 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h4><p><code>pod repo push</code> 提交后一般要清一下pod缓存 <code>pod cache clean --all</code>, 然后调用<code> pod setup</code>更新</p>
+<h4 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h4><p>删除本地tag <code>git tag -d 0.0.1</code><br>删除远程tag <code>git push origin --delete tag 0.0.1</code></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/04/29/%E9%A1%B9%E7%9B%AE%E5%88%A9%E7%94%A8Cocoapods%E7%BB%84%E4%BB%B6%E5%8C%96/" data-id="clvq0zjcd000v7qqt3bed8hef" data-title="项目利用Cocoapods组件化" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-CoreText笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/04/26/CoreText%E7%AC%94%E8%AE%B0/" class="article-date">
+  <time class="dt-published" datetime="2018-04-26T03:14:30.000Z" itemprop="datePublished">2018-04-26</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/04/26/CoreText%E7%AC%94%E8%AE%B0/">CoreText</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>在CDChatList为了达到页面流畅的效果，用到了coretext，关键点记录如下</p>
+<p>聊天页面卡顿点主要有，计算聊天气泡高度、富文本渲染时的性能消耗太大，这两个可以异步操作，并缓存</p>
+<p>气泡高度的计算一般都是用NSString的boundingRectWithSize: options: attributes: context:方法计算，算出来的结果可以放在消息Model中缓存并可以本地化，这样就只需计算一次。</p>
+<p>富文本渲染有两种方法，UILabel中的attributedText可以复值富文本，但是boundingRectWithSize就不太好用了，而且要考虑到带表情的富文本，所以就得用另一个方法</p>
+<p>⬇️</p>
+<h1 id="CoreText"><a href="#CoreText" class="headerlink" title="CoreText"></a>CoreText</h1><div style="display:inline">首先需要注意的是，<h3 style="display:inline" >Coretext只有C的接口</h3>，所以得手动管理一些c的内存，同时还得了解字体字形相关信息。</div>
+
+<p>UILabel对coretext进行了封装，我们这里直接调用coretext，可以获得不错的性能表现。</p>
+<p>coretext可以实现文本尺寸的计算，文本在子线程绘制，绘制完成后再赋值给view，这样耗时操作都可以不在主线程操作，不影响页面流畅。</p>
+<p>上代码</p>
+<p>首先创建需要显示的富文本，这里可能包含表情，<br>形如: @”呵呵哒，然后来个表情[微笑][骷髅]”,<br>这里的[微笑][骷髅]就是需要被替换成表情图片，先用正则换成空字符占位，等后续图片绘制，绘制部分具体代码可见CDChatList的CDLabel实现</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">NSMutableAttributedString *attString = [[NSMutableAttributedString alloc] initWithString:data.msgString attributes:dic];</span><br><span class="line"></span><br><span class="line">// 先创建framesetter</span><br><span class="line">CTFramesetterRef framesetter = CTFramesetterCreateWithAttributedString((CFAttributedStringRef)attString);</span><br></pre></td></tr></table></figure>
+
+<p>这步计算文本内容范围，猜测boundingRectWithSize也是用的这个方法，入参很像<br>这里的size就是需要缓存的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">CGSize caSize = CTFramesetterSuggestFrameSizeWithConstraints(framesetter, CFRangeMake(0,attString.length), nil, size, nil);</span><br><span class="line"></span><br><span class="line">// 这两步获得需要绘制文本的CGPath和CTFrame</span><br><span class="line">CGPathRef path = CGPathCreateWithRect(CGRectMake(0, 0, caSize.width, caSize.height), NULL);</span><br><span class="line">CTFrameRef frame = CTFramesetterCreateFrame(framesetter,CFRangeMake(0, [attString length]), path, NULL);</span><br><span class="line"></span><br><span class="line">// 注意需要释放内存</span><br><span class="line">CFRelease(framesetter);</span><br><span class="line">CFRelease(path);</span><br></pre></td></tr></table></figure>
+
+
+<p>渲染展示内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">UIGraphicsBeginImageContextWithOptions(caSize, NO, 0);</span><br><span class="line">CGContextRef context = UIGraphicsGetCurrentContext();</span><br><span class="line">CGContextSetTextMatrix(context, CGAffineTransformIdentity);</span><br><span class="line">CGContextTranslateCTM(context, 0, caSize.height);</span><br><span class="line">CGContextScaleCTM(context, 1.0, -1.0); // coretext坐标系翻转</span><br><span class="line">CTFrameDraw(frame, context);</span><br><span class="line">//.....将上面正则出来的表情图片也绘制在这个context上</span><br></pre></td></tr></table></figure>
+
+<p>最终我们得到这个需要展示的图片内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">UIImage *image = UIGraphicsGetImageFromCurrentImageContext();</span><br><span class="line">UIGraphicsEndImageContext();</span><br></pre></td></tr></table></figure>
+
+<p>在展示上面的图片时，将他赋给layer的contents<br>这一步必须在主线程执行，可以使用NSCache对此缓存，以达到流畅的效果，且不用担心内存问题</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">self.layer.contents = (__bridge id)data.contents.CGImage;</span><br></pre></td></tr></table></figure>
+
+<p>最终效果在GitHub见<a target="_blank" rel="noopener" href="https://github.com/chdo002/cdchatlist">CDChatList</a></p>
+<p>参考文章</p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/liujinlongxa/article/details/44864463">iOS中的富文本技术（2）-CoreText框架</a></p>
+<p><a target="_blank" rel="noopener" href="http://www.360doc.com/content/14/0214/15/11991_352473651.shtml">猿题库iOS客户端的技术细节(三):基于CoreText的排版引擎</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/chaoyuan899/article/details/46662679">基于 CoreText 的排版引擎：基础</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/04/26/CoreText%E7%AC%94%E8%AE%B0/" data-id="clvq0zjbr00017qqt51h65fve" data-title="CoreText" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+
+
+  <nav id="page-nav">
+    
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/">weiter &raquo;</a>
+  </nav>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/http-www-runoob-com-sqlite/" rel="tag">http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rn/" rel="tag">rn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" rel="tag">runtime track 埋点</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shadowsocks/" rel="tag">shadowsocks</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webpack/" rel="tag">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/weex/" rel="tag">weex</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/http-www-runoob-com-sqlite/" style="font-size: 10px;">http://www.runoob.com/sqlite/</a> <a href="/tags/rn/" style="font-size: 10px;">rn</a> <a href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" style="font-size: 10px;">runtime track 埋点</a> <a href="/tags/shadowsocks/" style="font-size: 10px;">shadowsocks</a> <a href="/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/tags/weex/" style="font-size: 10px;">weex</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/02/">February 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/09/">September 2017</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">letzter Beitrag</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/">NSArrary强引用问题</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/27/iOS%E5%90%AF%E5%8A%A8%E8%A7%A3%E6%9E%90/">iOS启动解析</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/07/NSNull%E5%AF%BC%E8%87%B4%E7%9A%84%E6%80%A7%E8%83%BD%E4%B8%8B%E9%99%8D/">NSNull导致的性能下降</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/">LeetCode</a>
+          </li>
+        
+          <li>
+            <a href="/2018/05/23/SQLite%20-%20C:C++/">SQLite - C/C++</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2024 chdo002<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

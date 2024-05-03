@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>SQLite | blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="最近要实现对SQLite的管理库，先记录如下：  基于 菜鸟 整理  基本知识 建表1234567CREATE TABLE database_name.table_name(   column1 datatype  PRIMARY KEY(one or more columns),   column2 datatype,   column3 datatype,   .....   columnN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SQLite">
+<meta property="og:url" content="http://example.com/2018/05/17/SQlite/index.html">
+<meta property="og:site_name" content="blog">
+<meta property="og:description" content="最近要实现对SQLite的管理库，先记录如下：  基于 菜鸟 整理  基本知识 建表1234567CREATE TABLE database_name.table_name(   column1 datatype  PRIMARY KEY(one or more columns),   column2 datatype,   column3 datatype,   .....   columnN">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-05-17T06:33:11.000Z">
+<meta property="article:modified_time" content="2024-05-02T03:28:47.403Z">
+<meta property="article:author" content="chdo002">
+<meta property="article:tag" content="http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<meta name="generator" content="Hexo 7.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Suche"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Suche"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-SQlite" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/17/SQlite/" class="article-date">
+  <time class="dt-published" datetime="2018-05-17T06:33:11.000Z" itemprop="datePublished">2018-05-17</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      SQLite
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>最近要实现对SQLite的管理库，先记录如下：</p>
+<blockquote>
+<p>基于 <a target="_blank" rel="noopener" href="http://www.runoob.com/sqlite/">菜鸟</a> 整理</p>
+</blockquote>
+<h1 id="基本知识"><a href="#基本知识" class="headerlink" title="基本知识"></a>基本知识</h1><hr>
+<h2 id="建表"><a href="#建表" class="headerlink" title="建表"></a>建表</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE database_name.table_name(</span><br><span class="line">   column1 datatype  PRIMARY KEY(one or more columns),</span><br><span class="line">   column2 datatype,</span><br><span class="line">   column3 datatype,</span><br><span class="line">   .....</span><br><span class="line">   columnN datatype,</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="删表"><a href="#删表" class="headerlink" title="删表"></a>删表</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DROP TABLE database_name.table_name;</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="插入列"><a href="#插入列" class="headerlink" title="插入列"></a>插入列</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO TABLE_NAME [(column1, column2, column3,...columnN)]  </span><br><span class="line">VALUES (value1, value2, value3,...valueN);</span><br><span class="line"></span><br><span class="line">INSERT INTO TABLE_NAME VALUES (value1,value2,value3,...valueN);</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Update-语句"><a href="#Update-语句" class="headerlink" title="Update 语句"></a>Update 语句</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">UPDATE table_name</span><br><span class="line">SET column1 = value1, column2 = value2...., columnN = valueN</span><br><span class="line">WHERE [condition];</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Delete-语句"><a href="#Delete-语句" class="headerlink" title="Delete 语句"></a>Delete 语句</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">DELETE FROM table_name</span><br><span class="line">WHERE [condition];</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2, columnN FROM table_name;</span><br><span class="line"></span><br><span class="line">SELECT * FROM table_name;</span><br></pre></td></tr></table></figure>
+
+
+<h1 id="子句"><a href="#子句" class="headerlink" title="子句"></a>子句</h1><p>各个子句的排列顺序</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT</span><br><span class="line">FROM</span><br><span class="line">WHERE</span><br><span class="line">GROUP BY</span><br><span class="line">HAVING</span><br><span class="line">ORDER BY</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Where子句"><a href="#Where子句" class="headerlink" title="Where子句"></a>Where子句</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2, columnN </span><br><span class="line">FROM table_name</span><br><span class="line">WHERE [condition]</span><br></pre></td></tr></table></figure>
+<p>AND</p>
+<hr>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2, columnN </span><br><span class="line">FROM table_name</span><br><span class="line">WHERE [condition1] AND [condition2]...AND [conditionN];</span><br></pre></td></tr></table></figure>
+<p>OR</p>
+<hr>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2, columnN </span><br><span class="line">FROM table_name</span><br><span class="line">WHERE [condition1] OR [condition2]...OR [conditionN]</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Like-子句"><a href="#Like-子句" class="headerlink" title="Like 子句"></a>Like 子句</h2><p>SQLite 的 LIKE 运算符是用来匹配通配符指定模式的文本值。如果搜索表达式与模式表达式匹配，LIKE 运算符将返回真（true），也就是 1。这里有两个通配符与 LIKE 运算符一起使用：<br>百分号 （%）<br>下划线 （_）快速记忆  _ 代表就一个字符<br>百分号（%）代表零个、一个或多个数字或字符。下划线（_）代表一个单一的数字或字符。这些符号可以被组合使用。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_list </span><br><span class="line">FROM table_name</span><br><span class="line">WHERE column LIKE &#x27;XXXX%&#x27;</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Glob-子句"><a href="#Glob-子句" class="headerlink" title="Glob 子句"></a>Glob 子句</h2><p>Glob类似like，区别是like 不区分大小写，GLob区分大小写</p>
+<p>星号 （ * ）对应 百分号 （%）问号 （?）对应 下划线 （ _ ）</p>
+<hr>
+<h2 id="Limit-子句"><a href="#Limit-子句" class="headerlink" title="Limit 子句"></a>Limit 子句</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2, columnN </span><br><span class="line">FROM table_name</span><br><span class="line">LIMIT [no of rows]</span><br></pre></td></tr></table></figure>
+<hr>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2, columnN </span><br><span class="line">FROM table_name</span><br><span class="line">LIMIT [no of rows] OFFSET [row num]</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Order-By-子句"><a href="#Order-By-子句" class="headerlink" title="Order By 子句"></a>Order By 子句</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT column-list </span><br><span class="line">FROM table_name </span><br><span class="line">[WHERE condition] </span><br><span class="line">[ORDER BY column1, column2, .. columnN] [ASC | DESC];</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Group-By-子句"><a href="#Group-By-子句" class="headerlink" title="Group By 子句"></a>Group By 子句</h2><p>SQLite 的 GROUP BY 子句用于与 SELECT 语句一起使用，来对相同的数据进行分组。</p>
+<p>在 SELECT 语句中，GROUP BY 子句放在 WHERE 子句之后，放在 ORDER BY 子句之前。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">SELECT column-list</span><br><span class="line">FROM table_name</span><br><span class="line">WHERE [ conditions ]</span><br><span class="line">GROUP BY column1, column2....columnN</span><br><span class="line">ORDER BY column1, column2....columnN</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Having-子句"><a href="#Having-子句" class="headerlink" title="Having 子句"></a>Having 子句</h2><p>HAVING 子句允许指定条件来过滤将出现在最终结果中的分组结果。</p>
+<p>WHERE 子句在所选列上设置条件，而 HAVING 子句则在由 GROUP BY 子句创建的分组上设置条件。</p>
+<p>在一个查询中，HAVING 子句必须放在 GROUP BY 子句之后，必须放在 ORDER BY 子句之前。下面是包含 HAVING 子句的 SELECT 语句的语法：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2</span><br><span class="line">FROM table1, table2</span><br><span class="line">WHERE [ conditions ]</span><br><span class="line">GROUP BY column1, column2</span><br><span class="line">HAVING [ conditions ]</span><br><span class="line">ORDER BY column1, column2</span><br></pre></td></tr></table></figure>
+
+<h1 id="关键字"><a href="#关键字" class="headerlink" title="关键字"></a>关键字</h1><hr>
+<h2 id="Distinct-关键字"><a href="#Distinct-关键字" class="headerlink" title="Distinct 关键字"></a>Distinct 关键字</h2><p>DISTINCT 关键字与 SELECT 语句一起使用，来消除所有重复的记录，并只获取唯一一次记录。</p>
+<p>加了索引之后 distinct 比没加索引的 distinct 快。<br>加了索引之后 group by 比没加索引的 group by 快。<br>再来对比 ：distinct  和 group by</p>
+<p>不管是加不加索引 group by 都比 distinct 快</p>
+<p>distinct 和group by都需要排序，一样的结果集从执行计划的成本代价来看差距不大，但group by 还涉及到统计，所以应该需要准备工作。所以单纯从等价结果来说，选择distinct比较效率一些。</p>
+<p>1.数据列的所有数据都一样，即去重计数的结果为1时，用distinct最佳</p>
+<p>2.如果数据列唯一，没有相同数值，用group 最好</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT DISTINCT column1, column2,.....columnN </span><br><span class="line">FROM table_name</span><br><span class="line">WHERE [condition]</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="Autoincrement"><a href="#Autoincrement" class="headerlink" title="Autoincrement"></a>Autoincrement</h2><p>自增约束</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; CREATE TABLE COMPANY(</span><br><span class="line">   ID INTEGER PRIMARY KEY   AUTOINCREMENT,</span><br><span class="line">   NAME           TEXT      NOT NULL,</span><br><span class="line">   AGE            INT       NOT NULL,</span><br><span class="line">   ADDRESS        CHAR(50),</span><br><span class="line">   SALARY         REAL</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>在AUTOINCREMENT约束的字段没有赋值时，就会自动设定为最大的rowid+1，<br>自增字段只能是主键。</p>
+<h1 id="进阶"><a href="#进阶" class="headerlink" title="进阶"></a>进阶</h1><hr>
+<h2 id="PRAGMA"><a href="#PRAGMA" class="headerlink" title="PRAGMA"></a>PRAGMA</h2><p>SQLite 的 PRAGMA 命令是一个特殊的命令，可以用在 SQLite 环境内控制各种环境变量和状态标志。一个 PRAGMA 值可以被读取，也可以根据需求进行设置。</p>
+<p>pragma 修改的是预置的变量，不可以自定义变量</p>
+<p><a target="_blank" rel="noopener" href="http://www.sqlite.org/pragma.html#pragma_application_id">具体有哪些环境变量查看这里</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">要查询当前的 PRAGMA 值，只需要提供该 pragma 的名字：</span><br><span class="line"></span><br><span class="line">PRAGMA pragma_name;</span><br><span class="line"></span><br><span class="line">要为 PRAGMA 设置一个新的值，语法如下：</span><br><span class="line"></span><br><span class="line">PRAGMA pragma_name = value;</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="约束"><a href="#约束" class="headerlink" title="约束"></a>约束</h2><p>常用约束</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">NOT NULL 约束：确保某列不能有 NULL 值。</span><br><span class="line"></span><br><span class="line">DEFAULT 约束：当某列没有指定值时，为该列提供默认值。</span><br><span class="line"></span><br><span class="line">UNIQUE 约束：确保某列中的所有值是不同的。</span><br><span class="line"></span><br><span class="line">PRIMARY Key 约束：唯一标识数据库表中的各行/记录。</span><br><span class="line"></span><br><span class="line">CHECK 约束：CHECK 约束确保某列中的所有值满足一定条件。</span><br></pre></td></tr></table></figure>
+<p>针对check，写个栗子</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE COMPANY3(</span><br><span class="line">   ID INT PRIMARY KEY     NOT NULL,</span><br><span class="line">   NAME           TEXT    NOT NULL,</span><br><span class="line">   AGE            INT     NOT NULL,</span><br><span class="line">   ADDRESS        CHAR(50),</span><br><span class="line">   SALARY         REAL    CHECK(SALARY &gt; 0)</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>默认值</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE COMPANY(</span><br><span class="line">   ID INT PRIMARY KEY     NOT NULL,</span><br><span class="line">   NAME           TEXT    NOT NULL,</span><br><span class="line">   AGE            INT     NOT NULL,</span><br><span class="line">   ADDRESS        CHAR(50),</span><br><span class="line">   SALARY         REAL    DEFAULT 50000.00</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Joins"><a href="#Joins" class="headerlink" title="Joins"></a>Joins</h2><p>sqlite 支持的joins 有三种链接</p>
+<h3 id="交叉连接-CROSS-JOIN"><a href="#交叉连接-CROSS-JOIN" class="headerlink" title="交叉连接 - CROSS JOIN"></a>交叉连接 - CROSS JOIN</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">如果不带WHERE条件子句，它将会返回被连接的两个表的笛卡尔积，返回结果的行数等于两个表行数的乘积</span><br></pre></td></tr></table></figure>
+
+<h3 id="内连接-INNER-JOIN"><a href="#内连接-INNER-JOIN" class="headerlink" title="内连接 - INNER JOIN"></a>内连接 - INNER JOIN</h3><p>INNER JOIN 产生的结果是AB的交集</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM TableA INNER JOIN TableB ON TableA.name = TableB.name</span><br></pre></td></tr></table></figure>
+
+<h3 id="外连接-OUTER-JOIN"><a href="#外连接-OUTER-JOIN" class="headerlink" title="外连接 - OUTER JOIN"></a>外连接 - OUTER JOIN</h3><p>LEFT [OUTER] JOIN   产生表A的完全集，而B表中匹配的则有值，没有匹配的则以null值取代。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM TableA LEFT OUTER JOIN TableB ON TableA.name = TableB.name</span><br></pre></td></tr></table></figure>
+<p>RIGHT [OUTER] JOIN  不支持<br>FULL [OUTER] JOINs 不支持  </p>
+<hr>
+<h2 id="Unions-子句"><a href="#Unions-子句" class="headerlink" title="Unions 子句"></a>Unions 子句</h2><p>SQLite的 UNION 子句&#x2F;运算符用于合并两个或多个 SELECT 语句的结果，不返回任何重复的行。</p>
+<hr>
+<h2 id="别名"><a href="#别名" class="headerlink" title="别名"></a>别名</h2><p>可以暂时把表或列重命名为另一个名字，这被称为别名</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column1, column2....</span><br><span class="line">FROM table_name AS alias_name</span><br><span class="line">WHERE [condition];</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT sum(column) as alias_name</span><br><span class="line">FROM table_name</span><br><span class="line">WHERE [condition];</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="触发器（Trigger）"><a href="#触发器（Trigger）" class="headerlink" title="触发器（Trigger）"></a>触发器（Trigger）</h2><p>SQLite 触发器（Trigger）是数据库的回调函数，它会在指定的数据库事件发生时自动执行&#x2F;调用。</p>
+<p>SQLite 的触发器（Trigger）可以指定在特定的数据库表发生 DELETE、INSERT 或 UPDATE 时触发，或在一个或多个指定表的列发生更新时触发。<br>SQLite 只支持 FOR EACH ROW 触发器（Trigger），没有 FOR EACH STATEMENT 触发器（Trigger）。因此，明确指定 FOR EACH ROW 是可选的。<br>WHEN 子句和触发器（Trigger）动作可能访问使用表单 NEW.column-name 和 OLD.column-name 的引用插入、删除或更新的行元素，其中 column-name 是从与触发器关联的表的列的名称。<br>如果提供 WHEN 子句，则只针对 WHEN 子句为真的指定行执行 SQL 语句。如果没有提供 WHEN 子句，则针对所有行执行 SQL 语句。<br>BEFORE 或 AFTER 关键字决定何时执行触发器动作，决定是在关联行的插入、修改或删除之前或者之后执行触发器动作。<br>当触发器相关联的表删除时，自动删除触发器（Trigger）。<br>要修改的表必须存在于同一数据库中，作为触发器被附加的表或视图，且必须只使用 tablename，而不是 database.tablename。<br>一个特殊的 SQL 函数 RAISE() 可用于触发器程序内抛出异常。</p>
+<p>添加触发器</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">CREATE TRIGGER audit_log AFTER INSERT </span><br><span class="line">ON COMPANY</span><br><span class="line">BEGIN</span><br><span class="line">   INSERT INTO AUDIT(EMP_ID, ENTRY_DATE) VALUES (new.ID, datetime(&#x27;now&#x27;));</span><br><span class="line">END;</span><br></pre></td></tr></table></figure>
+
+<p>删除触发器</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DROP TRIGGER trigger_name;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="索引（Index）"><a href="#索引（Index）" class="headerlink" title="索引（Index）"></a>索引（Index）</h2><p>索引（Index）是一种特殊的查找表，数据库搜索引擎用来加快数据检索。简单地说，索引是一个指向表中数据的指针。一个数据库中的索引与一本书后边的索引是非常相似的。<br>索引有助于加快 SELECT 查询和 WHERE 子句，但它会减慢使用 UPDATE 和 INSERT 语句时的数据输入。索引可以创建或删除，但不会影响数据。<br>索引也可以是唯一的，与 UNIQUE 约束类似，在列上或列组合上防止重复条目。</p>
+<h3 id="创建索引"><a href="#创建索引" class="headerlink" title="创建索引"></a>创建索引</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX index_name ON table_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="单列索引"><a href="#单列索引" class="headerlink" title="单列索引"></a>单列索引</h3><p>单列索引是一个只基于表的一个列上创建的索引。基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX index_name</span><br><span class="line">ON table_name (column_name);</span><br></pre></td></tr></table></figure>
+
+<h3 id="唯一索引"><a href="#唯一索引" class="headerlink" title="唯一索引"></a>唯一索引</h3><p>使用唯一索引不仅是为了性能，同时也为了数据的完整性。唯一索引不允许任何重复的值插入到表中。基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CREATE UNIQUE INDEX index_name</span><br><span class="line">on table_name (column_name);</span><br></pre></td></tr></table></figure>
+
+<h3 id="组合索引"><a href="#组合索引" class="headerlink" title="组合索引"></a>组合索引</h3><p>组合索引是基于一个表的两个或多个列上创建的索引。基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX index_name</span><br><span class="line">on table_name (column1, column2);</span><br></pre></td></tr></table></figure>
+
+<p>是否要创建一个单列索引还是组合索引，要考虑到您在作为查询过滤条件的 WHERE 子句中使用非常频繁的列。<br>如果值使用到一个列，则选择使用单列索引。如果在作为过滤的 WHERE 子句中有两个或多个列经常使用，则选择使用组合索引。</p>
+<p>虽然索引的目的在于提高数据库的性能，但这里有几个情况需要避免使用索引。使用索引时，应重新考虑下列准则：</p>
+<ul>
+<li>索引不应该使用在较小的表上。</li>
+<li>索引不应该使用在有频繁的大批量的更新或插入操作的表上。</li>
+<li>索引不应该使用在含有大量的 NULL 值的列上。</li>
+<li>索引不应该使用在频繁操作的列上。</li>
+</ul>
+<h3 id="indexed-by-子句"><a href="#indexed-by-子句" class="headerlink" title="indexed by 子句"></a>indexed by 子句</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT|DELETE|UPDATE column1, column2...</span><br><span class="line">INDEXED BY (index_name)</span><br><span class="line">table_name</span><br><span class="line">WHERE (CONDITION);</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="Alter-命令"><a href="#Alter-命令" class="headerlink" title="Alter 命令"></a>Alter 命令</h2><p>在 SQLite 中，除了重命名表和在已有的表中添加列，ALTER TABLE 命令不支持其他操作。</p>
+<p>用来重命名已有的表的 ALTER TABLE 的基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE database_name.table_name RENAME TO new_table_name;</span><br></pre></td></tr></table></figure>
+<p>用来在已有的表中添加一个新的列的 ALTER TABLE 的基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE database_name.table_name ADD COLUMN column_def...;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="事务（Transaction）"><a href="#事务（Transaction）" class="headerlink" title="事务（Transaction）"></a>事务（Transaction）</h2><p>事务（Transaction）是一个对数据库执行工作单元。事务（Transaction）是以逻辑顺序完成的工作单位或序列，可以是由用户手动操作完成，也可以是由某种数据库程序自动完成。<br>事务（Transaction）是指一个或多个更改数据库的扩展。例如，如果您正在创建一个记录或者更新一个记录或者从表中删除一个记录，那么您正在该表上执行事务。重要的是要控制事务以确保数据的完整性和处理数据库错误。<br>实际上，您可以把许多的 SQLite 查询联合成一组，把所有这些放在一起作为事务的一部分进行执行。</p>
+<p>事务的属性<br>事务（Transaction）具有以下四个标准属性，通常根据首字母缩写为 ACID：</p>
+<ul>
+<li>原子性（Atomicity）：确保工作单位内的所有操作都成功完成，否则，事务会在出现故障时终止，之前的操作也会回滚到以前的状态。</li>
+<li>一致性（Consistency)：确保数据库在成功提交的事务上正确地改变状态。</li>
+<li>隔离性（Isolation）：使事务操作相互独立和透明。</li>
+<li>持久性（Durability）：确保已提交事务的结果或效果在系统发生故障的情况下仍然存在</li>
+</ul>
+<h3 id="事务控制"><a href="#事务控制" class="headerlink" title="事务控制"></a>事务控制</h3><p>使用下面的命令来控制事务：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">BEGIN TRANSACTION：开始事务处理。</span><br><span class="line">COMMIT：保存更改，或者可以使用 END TRANSACTION 命令。</span><br><span class="line">ROLLBACK：回滚所做的更改。</span><br></pre></td></tr></table></figure>
+
+<p>事务控制命令只与 DML 命令 INSERT、UPDATE 和 DELETE 一起使用。他们不能在创建表或删除表时使用，因为这些操作在数据库中是自动提交的。</p>
+<h3 id="BEGIN-TRANSACTION-命令"><a href="#BEGIN-TRANSACTION-命令" class="headerlink" title="BEGIN TRANSACTION 命令"></a>BEGIN TRANSACTION 命令</h3><p>事务（Transaction）可以使用 BEGIN TRANSACTION 命令或简单的 BEGIN 命令来启动。此类事务通常会持续执行下去，直到遇到下一个 COMMIT 或 ROLLBACK 命令。不过在数据库关闭或发生错误时，事务处理也会回滚。以下是启动一个事务的简单语法：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">BEGIN;</span><br><span class="line">or </span><br><span class="line">BEGIN TRANSACTION;</span><br></pre></td></tr></table></figure>
+
+<h3 id="COMMIT-命令"><a href="#COMMIT-命令" class="headerlink" title="COMMIT 命令"></a>COMMIT 命令</h3><p>COMMIT 命令是用于把事务调用的更改保存到数据库中的事务命令。<br>COMMIT 命令把自上次 COMMIT 或 ROLLBACK 命令以来的所有事务保存到数据库。<br>COMMIT 命令的语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">COMMIT;</span><br><span class="line">or</span><br><span class="line">END TRANSACTION;</span><br></pre></td></tr></table></figure>
+
+<h3 id="ROLLBACK-命令"><a href="#ROLLBACK-命令" class="headerlink" title="ROLLBACK 命令"></a>ROLLBACK 命令</h3><p>ROLLBACK 命令是用于撤消尚未保存到数据库的事务的事务命令。<br>ROLLBACK 命令只能用于撤销自上次发出 COMMIT 或 ROLLBACK 命令以来的事务。<br>ROLLBACK 命令的语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ROLLBACK;</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="SQLite-子查询"><a href="#SQLite-子查询" class="headerlink" title="SQLite 子查询"></a>SQLite 子查询</h2><p>子查询或内部查询或嵌套查询是在另一个 SQLite 查询内嵌入在 WHERE 子句中的查询。</p>
+<p>使用子查询返回的数据将被用在主查询中作为条件，以进一步限制要检索的数据。<br>子查询可以与 SELECT、INSERT、UPDATE 和 DELETE 语句一起使用，可伴随着使用运算符如 &#x3D;、&lt;、&gt;、&gt;&#x3D;、&lt;&#x3D;、IN、BETWEEN 等。</p>
+<p>以下是子查询必须遵循的几个规则：</p>
+<ul>
+<li>子查询必须用括号括起来。</li>
+<li>子查询在 SELECT 子句中只能有一个列，除非在主查询中有多列，与子查询的所选列进行比较。</li>
+<li>ORDER BY 不能用在子查询中，虽然主查询可以使用 ORDER BY。可以在子查询中使用 GROUP BY，功能与 ORDER BY 相同。</li>
+<li>子查询返回多于一行，只能与多值运算符一起使用，如 IN 运算符。</li>
+<li>BETWEEN 运算符不能与子查询一起使用，但是，BETWEEN 可在子查询内使用。</li>
+</ul>
+<h3 id="SELECT-语句中的子查询使用"><a href="#SELECT-语句中的子查询使用" class="headerlink" title="SELECT 语句中的子查询使用"></a>SELECT 语句中的子查询使用</h3><p>子查询通常与 SELECT 语句一起使用。基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name [, column_name ]</span><br><span class="line">FROM   table1 [, table2 ]</span><br><span class="line">WHERE  column_name OPERATOR</span><br><span class="line">      (SELECT column_name [, column_name ]</span><br><span class="line">      FROM table1 [, table2 ]</span><br><span class="line">      [WHERE])</span><br></pre></td></tr></table></figure>
+<h4 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h4><p>假设 COMPANY 表有以下记录：</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>NAME</th>
+<th>AGE</th>
+<th>ADDRESS</th>
+<th>SALARY</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Paul</td>
+<td>32</td>
+<td>California</td>
+<td>20000.0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Allen</td>
+<td>25</td>
+<td>Texas</td>
+<td>15000.0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Teddy</td>
+<td>23</td>
+<td>Norway</td>
+<td>20000.0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Mark</td>
+<td>25</td>
+<td>Rich-Mond</td>
+<td>65000.0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>David</td>
+<td>27</td>
+<td>Texas</td>
+<td>85000.0</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Kim</td>
+<td>22</td>
+<td>South-Hall</td>
+<td>45000.0</td>
+</tr>
+<tr>
+<td>7</td>
+<td>James</td>
+<td>24</td>
+<td>Houston</td>
+<td>10000.0</td>
+</tr>
+</tbody></table>
+<p>现在，让我们检查 SELECT 语句中的子查询使用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT * </span><br><span class="line">     FROM COMPANY </span><br><span class="line">     WHERE ID IN (SELECT ID </span><br><span class="line">                  FROM COMPANY </span><br><span class="line">                  WHERE SALARY &gt; 45000) ;</span><br></pre></td></tr></table></figure>
+<p>这将产生以下结果:</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>NAME</th>
+<th>AGE</th>
+<th>ADDRESS</th>
+<th>SALARY</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>4</td>
+<td>Mark</td>
+<td>25</td>
+<td>Rich-Mond</td>
+<td>65000.0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>David</td>
+<td>27</td>
+<td>Texas</td>
+<td>85000.0</td>
+</tr>
+</tbody></table>
+<h3 id="INSERT-语句中的子查询使用"><a href="#INSERT-语句中的子查询使用" class="headerlink" title="INSERT 语句中的子查询使用"></a>INSERT 语句中的子查询使用</h3><p>子查询也可以与 INSERT 语句一起使用。INSERT 语句使用子查询返回的数据插入到另一个表中。在子查询中所选择的数据可以用任何字符、日期或数字函数修改。</p>
+<p>基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO table_name [ (column1 [, column2 ]) ]</span><br><span class="line">           SELECT [ *|column1 [, column2 ]</span><br><span class="line">           FROM table1 [, table2 ]</span><br><span class="line">           [ WHERE VALUE OPERATOR ]</span><br></pre></td></tr></table></figure>
+
+<h4 id="实例-1"><a href="#实例-1" class="headerlink" title="实例"></a>实例</h4><p>假设 COMPANY_BKP 的结构与 COMPANY 表相似，且可使用相同的 CREATE TABLE 进行创建，只是表名改为 COMPANY_BKP。</p>
+<p>现在把整个 COMPANY 表复制到 COMPANY_BKP，语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; INSERT INTO COMPANY_BKP</span><br><span class="line">     SELECT * FROM COMPANY </span><br><span class="line">     WHERE ID IN (SELECT ID </span><br><span class="line">                  FROM COMPANY) ;</span><br></pre></td></tr></table></figure>
+<h3 id="UPDATE-语句中的子查询使用"><a href="#UPDATE-语句中的子查询使用" class="headerlink" title="UPDATE 语句中的子查询使用"></a>UPDATE 语句中的子查询使用</h3><p>子查询可以与 UPDATE 语句结合使用。当通过 UPDATE 语句使用子查询时，表中单个或多个列被更新。</p>
+<p>基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">UPDATE table</span><br><span class="line">SET column_name = new_value</span><br><span class="line">[ WHERE OPERATOR [ VALUE ]</span><br><span class="line">   (SELECT COLUMN_NAME</span><br><span class="line">   FROM TABLE_NAME)</span><br><span class="line">   [ WHERE) ]</span><br></pre></td></tr></table></figure>
+<h4 id="实例-2"><a href="#实例-2" class="headerlink" title="实例"></a>实例</h4><p>假设，我们有 COMPANY_BKP 表，是 COMPANY 表的备份。</p>
+<p>下面的实例把 COMPANY 表中所有 AGE 大于或等于 27 的客户的 SALARY 更新为原来的 0.50 倍：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; UPDATE COMPANY</span><br><span class="line">     SET SALARY = SALARY * 0.50</span><br><span class="line">     WHERE AGE IN (SELECT AGE FROM COMPANY_BKP</span><br><span class="line">                   WHERE AGE &gt;= 27 );</span><br></pre></td></tr></table></figure>
+<p>这将影响两行，最后 COMPANY 表中的记录如下：</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>NAME</th>
+<th>AGE</th>
+<th>ADDRESS</th>
+<th>SALARY</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Paul</td>
+<td>32</td>
+<td>California</td>
+<td>10000.0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Allen</td>
+<td>25</td>
+<td>Texas</td>
+<td>15000.0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Teddy</td>
+<td>23</td>
+<td>Norway</td>
+<td>20000.0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Mark</td>
+<td>25</td>
+<td>Rich-Mond</td>
+<td>65000.0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>David</td>
+<td>27</td>
+<td>Texas</td>
+<td>42500.0</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Kim</td>
+<td>22</td>
+<td>South-Hall</td>
+<td>45000.0</td>
+</tr>
+<tr>
+<td>7</td>
+<td>James</td>
+<td>24</td>
+<td>Houston</td>
+<td>10000.0</td>
+</tr>
+</tbody></table>
+<h3 id="DELETE-语句中的子查询使用"><a href="#DELETE-语句中的子查询使用" class="headerlink" title="DELETE 语句中的子查询使用"></a>DELETE 语句中的子查询使用</h3><p>子查询可以与 DELETE 语句结合使用，就像上面提到的其他语句一样。</p>
+<p>基本语法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">DELETE FROM TABLE_NAME</span><br><span class="line">[ WHERE OPERATOR [ VALUE ]</span><br><span class="line">   (SELECT COLUMN_NAME</span><br><span class="line">   FROM TABLE_NAME)</span><br><span class="line">   [ WHERE) ]</span><br></pre></td></tr></table></figure>
+<h4 id="实例-3"><a href="#实例-3" class="headerlink" title="实例"></a>实例</h4><p>假设，我们有 COMPANY_BKP 表，是 COMPANY 表的备份。<br>下面的实例删除 COMPANY 表中所有 AGE 大于或等于 27 的客户记录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; DELETE FROM COMPANY</span><br><span class="line">     WHERE AGE IN (SELECT AGE FROM COMPANY_BKP</span><br><span class="line">                   WHERE AGE &gt; 27 );</span><br></pre></td></tr></table></figure>
+<p>这将影响两行，最后 COMPANY 表中的记录如下：</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>NAME</th>
+<th>AGE</th>
+<th>ADDRESS</th>
+<th>SALARY</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2</td>
+<td>Allen</td>
+<td>25</td>
+<td>Texas</td>
+<td>15000.0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Teddy</td>
+<td>23</td>
+<td>Norway</td>
+<td>20000.0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Mark</td>
+<td>25</td>
+<td>Rich-Mond</td>
+<td>65000.0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>David</td>
+<td>27</td>
+<td>Texas</td>
+<td>42500.0</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Kim</td>
+<td>22</td>
+<td>South-Hall</td>
+<td>45000.0</td>
+</tr>
+<tr>
+<td>7</td>
+<td>James</td>
+<td>24</td>
+<td>Houston</td>
+<td>10000.0</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="SQLite-日期-时间"><a href="#SQLite-日期-时间" class="headerlink" title="SQLite 日期 &amp; 时间"></a>SQLite 日期 &amp; 时间</h2><p>SQLite 支持以下五个日期和时间函数：</p>
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th>函数</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>date(timestring, modifier, modifier, …)</td>
+<td>以 YYYY-MM-DD 格式返回日期。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>time(timestring, modifier, modifier, …)</td>
+<td>以 HH:MM:SS 格式返回时间。</td>
+</tr>
+<tr>
+<td>3</td>
+<td>datetime(timestring, modifier, modifier, …)</td>
+<td>以 YYYY-MM-DD HH:MM:SS 格式返回。</td>
+</tr>
+<tr>
+<td>4</td>
+<td>julianday(timestring, modifier, modifier, …)</td>
+<td>这将返回从格林尼治时间的公元前 4714 年 11 月 24 日正午算起的天数。</td>
+</tr>
+<tr>
+<td>5</td>
+<td>strftime(format, timestring, modifier, modifier, …)</td>
+<td>这将根据第一个参数指定的格式字符串返回格式化的日期。具体格式见下边讲解。</td>
+</tr>
+</tbody></table>
+<p>上述五个日期和时间函数把时间字符串作为参数。时间字符串后跟零个或多个 modifier 修饰符。strftime() 函数也可以把格式字符串 format 作为其第一个参数。下面将为您详细讲解不同类型的时间字符串和修饰符。</p>
+<h3 id="时间字符串"><a href="#时间字符串" class="headerlink" title="时间字符串"></a>时间字符串</h3><p>一个时间字符串可以采用下面任何一种格式：</p>
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th>时间字符串</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>YYYY-MM-DD</td>
+<td>2010-12-30</td>
+</tr>
+<tr>
+<td>2</td>
+<td>YYYY-MM-DD HH:MM</td>
+<td>2010-12-30 12:10</td>
+</tr>
+<tr>
+<td>3</td>
+<td>YYYY-MM-DD HH:MM:SS.SSS</td>
+<td>2010-12-30 12:10:04.100</td>
+</tr>
+<tr>
+<td>4</td>
+<td>MM-DD-YYYY HH:MM</td>
+<td>30-12-2010 12:10</td>
+</tr>
+<tr>
+<td>5</td>
+<td>HH:MM</td>
+<td>12:10</td>
+</tr>
+<tr>
+<td>6</td>
+<td>YYYY-MM-DDTHH:MM</td>
+<td>2010-12-30 12:10</td>
+</tr>
+<tr>
+<td>7</td>
+<td>HH:MM:SS</td>
+<td>12:10:01</td>
+</tr>
+<tr>
+<td>8</td>
+<td>YYYYMMDD HHMMSS</td>
+<td>20101230 121001</td>
+</tr>
+<tr>
+<td>9</td>
+<td>now</td>
+<td>2013-05-07</td>
+</tr>
+</tbody></table>
+<p>您可以使用 “T” 作为分隔日期和时间的文字字符。</p>
+<h3 id="修饰符（Modifier）"><a href="#修饰符（Modifier）" class="headerlink" title="修饰符（Modifier）"></a>修饰符（Modifier）</h3><p>时间字符串后边可跟着零个或多个的修饰符，这将改变有上述五个函数返回的日期和&#x2F;或时间。任何上述五大功能返回时间。修饰符应从左到右使用，下面列出了可在 SQLite 中使用的修饰符：</p>
+<ul>
+<li>NNN days</li>
+<li>NNN hours</li>
+<li>NNN minutes</li>
+<li>NNN.NNNN seconds</li>
+<li>NNN months</li>
+<li>NNN years</li>
+<li>start of month</li>
+<li>start of year</li>
+<li>start of day</li>
+<li>weekday N</li>
+<li>unixepoch</li>
+<li>localtime</li>
+<li>utc</li>
+</ul>
+<h3 id="格式化"><a href="#格式化" class="headerlink" title="格式化"></a>格式化</h3><p>SQLite 提供了非常方便的函数 strftime() 来格式化任何日期和时间。您可以使用以下的替换来格式化日期和时间：</p>
+<table>
+<thead>
+<tr>
+<th>替换</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>%d</td>
+<td>一月中的第几天，01-31</td>
+</tr>
+<tr>
+<td>%f</td>
+<td>带小数部分的秒，SS.SSS</td>
+</tr>
+<tr>
+<td>%H</td>
+<td>小时，00-23</td>
+</tr>
+<tr>
+<td>%j</td>
+<td>一年中的第几天，001-366</td>
+</tr>
+<tr>
+<td>%J</td>
+<td>儒略日数，DDDD.DDDD</td>
+</tr>
+<tr>
+<td>%m</td>
+<td>月，00-12</td>
+</tr>
+<tr>
+<td>%M</td>
+<td>分，00-59</td>
+</tr>
+<tr>
+<td>%s</td>
+<td>从 1970-01-01 算起的秒数</td>
+</tr>
+<tr>
+<td>%S</td>
+<td>秒，00-59</td>
+</tr>
+<tr>
+<td>%w</td>
+<td>一周中的第几天，0-6 (0 is Sunday)</td>
+</tr>
+<tr>
+<td>%W</td>
+<td>一年中的第几周，01-53</td>
+</tr>
+<tr>
+<td>%Y</td>
+<td>年，YYYY</td>
+</tr>
+<tr>
+<td>%%</td>
+<td>% symbol</td>
+</tr>
+</tbody></table>
+<h3 id="实例-4"><a href="#实例-4" class="headerlink" title="实例"></a>实例</h3><p>现在让我们使用 SQLite 提示符尝试不同的实例。下面是计算当前日期：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT date(&#x27;now&#x27;);</span><br><span class="line">2013-05-07</span><br></pre></td></tr></table></figure>
+
+<p>下面是计算当前月份的最后一天：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT date(&#x27;now&#x27;,&#x27;start of month&#x27;,&#x27;+1 month&#x27;,&#x27;-1 day&#x27;);</span><br><span class="line">2013-05-31</span><br></pre></td></tr></table></figure>
+<p>下面是计算给定 UNIX 时间戳 1092941466 的日期和时间：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT datetime(1092941466, &#x27;unixepoch&#x27;);</span><br><span class="line">2004-08-19 18:51:06</span><br></pre></td></tr></table></figure>
+<p>下面是计算给定 UNIX 时间戳 1092941466 相对本地时区的日期和时间：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT datetime(1092941466, &#x27;unixepoch&#x27;, &#x27;localtime&#x27;);</span><br><span class="line">2004-08-19 11:51:06</span><br></pre></td></tr></table></figure>
+<p>下面是计算当前的 UNIX 时间戳：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT strftime(&#x27;%s&#x27;,&#x27;now&#x27;);</span><br><span class="line">1367926057</span><br></pre></td></tr></table></figure>
+<p>下面是计算美国”独立宣言”签署以来的天数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT julianday(&#x27;now&#x27;) - julianday(&#x27;1776-07-04&#x27;);</span><br><span class="line">86504.4775830326</span><br></pre></td></tr></table></figure>
+<p>下面是计算从 2004 年某一特定时刻以来的秒数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT strftime(&#x27;%s&#x27;,&#x27;now&#x27;) - strftime(&#x27;%s&#x27;,&#x27;2004-01-01 02:34:56&#x27;);</span><br><span class="line">295001572</span><br></pre></td></tr></table></figure>
+<p>下面是计算当年 10 月的第一个星期二的日期：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT date(&#x27;now&#x27;,&#x27;start of year&#x27;,&#x27;+9 months&#x27;,&#x27;weekday 2&#x27;);</span><br><span class="line">2013-10-01</span><br></pre></td></tr></table></figure>
+<p>下面是计算从 UNIX 纪元算起的以秒为单位的时间（类似 strftime(‘%s’,’now’) ，不同的是这里有包括小数部分）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT (julianday(&#x27;now&#x27;) - 2440587.5)*86400.0;</span><br><span class="line">1367926077.12598</span><br></pre></td></tr></table></figure>
+<p>在 UTC 与本地时间值之间进行转换，当格式化日期时，使用 utc 或 localtime 修饰符，如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT time(&#x27;12:00&#x27;, &#x27;localtime&#x27;);</span><br><span class="line">05:00:00</span><br><span class="line"></span><br><span class="line">sqlite&gt;  SELECT time(&#x27;12:00&#x27;, &#x27;utc&#x27;);</span><br><span class="line">19:00:00</span><br></pre></td></tr></table></figure>
+
+<h2 id="常用函数"><a href="#常用函数" class="headerlink" title="常用函数"></a>常用函数</h2><p>QLite 有许多内置函数用于处理字符串或数字数据。下面列出了一些有用的 SQLite 内置函数，且所有函数都是大小写不敏感，这意味着您可以使用这些函数的小写形式或大写形式或混合形式。欲了解更多详情，请查看 SQLite 的官方文档：</p>
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th>函数 &amp; 描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>SQLite COUNT 函数<br>SQLite COUNT 聚集函数是用来计算一个数据库表中的行数。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>SQLite MAX 函数<br>SQLite MAX 聚合函数允许我们选择某列的最大值。</td>
+</tr>
+<tr>
+<td>3</td>
+<td>SQLite MIN 函数<br>SQLite MIN 聚合函数允许我们选择某列的最小值。</td>
+</tr>
+<tr>
+<td>4</td>
+<td>SQLite AVG 函数<br>SQLite AVG 聚合函数计算某列的平均值。</td>
+</tr>
+<tr>
+<td>5</td>
+<td>SQLite SUM 函数<br>SQLite SUM 聚合函数允许为一个数值列计算总和。</td>
+</tr>
+<tr>
+<td>6</td>
+<td>SQLite RANDOM 函数<br>SQLite RANDOM 函数返回一个介于 -9223372036854775808 和 +9223372036854775807 之间的伪随机整数。</td>
+</tr>
+<tr>
+<td>7</td>
+<td>SQLite ABS 函数<br>SQLite ABS 函数返回数值参数的绝对值。</td>
+</tr>
+<tr>
+<td>8</td>
+<td>SQLite UPPER 函数<br>SQLite UPPER 函数把字符串转换为大写字母。</td>
+</tr>
+<tr>
+<td>9</td>
+<td>SQLite LOWER 函数<br>SQLite LOWER 函数把字符串转换为小写字母。</td>
+</tr>
+<tr>
+<td>10</td>
+<td>SQLite LENGTH 函数<br>SQLite LENGTH 函数返回字符串的长度。</td>
+</tr>
+<tr>
+<td>11</td>
+<td>SQLite sqlite_version 函数<br>SQLite sqlite_version 函数返回 SQLite 库的版本。</td>
+</tr>
+</tbody></table>
+<p>在我们开始讲解这些函数实例之前，先假设 COMPANY 表有以下记录：</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>NAME</th>
+<th>AGE</th>
+<th>ADDRESS</th>
+<th>SALARY</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Paul</td>
+<td>32</td>
+<td>California</td>
+<td>20000.0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Allen</td>
+<td>25</td>
+<td>Texas</td>
+<td>15000.0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Teddy</td>
+<td>23</td>
+<td>Norway</td>
+<td>20000.0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Mark</td>
+<td>25</td>
+<td>Rich-Mond</td>
+<td>65000.0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>David</td>
+<td>27</td>
+<td>Texas</td>
+<td>85000.0</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Kim</td>
+<td>22</td>
+<td>South-Hall</td>
+<td>45000.0</td>
+</tr>
+<tr>
+<td>7</td>
+<td>James</td>
+<td>24</td>
+<td>Houston</td>
+<td>10000.0</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-COUNT-函数"><a href="#SQLite-COUNT-函数" class="headerlink" title="SQLite COUNT 函数"></a>SQLite COUNT 函数</h3><p>SQLite COUNT 聚集函数是用来计算一个数据库表中的行数。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT count(*) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>count(*)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>7</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-MAX-函数"><a href="#SQLite-MAX-函数" class="headerlink" title="SQLite MAX 函数"></a>SQLite MAX 函数</h3><p>SQLite MAX 聚合函数允许我们选择某列的最大值。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT max(salary) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>max(salary)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>85000.0</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-MIN-函数"><a href="#SQLite-MIN-函数" class="headerlink" title="SQLite MIN 函数"></a>SQLite MIN 函数</h3><p>SQLite MIN 聚合函数允许我们选择某列的最小值。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT min(salary) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>min(salary)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>10000.0</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-AVG-函数"><a href="#SQLite-AVG-函数" class="headerlink" title="SQLite AVG 函数"></a>SQLite AVG 函数</h3><p>SQLite AVG 聚合函数计算某列的平均值。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT avg(salary) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>avg(salary)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>37142.8571428572</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-SUM-函数"><a href="#SQLite-SUM-函数" class="headerlink" title="SQLite SUM 函数"></a>SQLite SUM 函数</h3><p>SQLite SUM 聚合函数允许为一个数值列计算总和。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT sum(salary) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>sum(salary)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>260000.0</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-RANDOM-函数"><a href="#SQLite-RANDOM-函数" class="headerlink" title="SQLite RANDOM 函数"></a>SQLite RANDOM 函数</h3><p>SQLite RANDOM 函数返回一个介于 -9223372036854775808 和 +9223372036854775807 之间的伪随机整数。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT random() AS Random;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>Random</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>5876796417670984050</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-ABS-函数"><a href="#SQLite-ABS-函数" class="headerlink" title="SQLite ABS 函数"></a>SQLite ABS 函数</h3><p>SQLite ABS 函数返回数值参数的绝对值。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT abs(5), abs(-15), abs(NULL), abs(0), abs(&quot;ABC&quot;);</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>abs(5)</th>
+<th>abs(-15)</th>
+<th>abs(NULL)</th>
+<th>abs(0)</th>
+<th>abs(“ABC”)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>5</td>
+<td>15</td>
+<td>&lt; null &gt;</td>
+<td>0</td>
+<td>0.0</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-UPPER-函数"><a href="#SQLite-UPPER-函数" class="headerlink" title="SQLite UPPER 函数"></a>SQLite UPPER 函数</h3><p>SQLite UPPER 函数把字符串转换为大写字母。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT upper(name) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>upper(name)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PAUL</td>
+</tr>
+<tr>
+<td>ALLEN</td>
+</tr>
+<tr>
+<td>TEDDY</td>
+</tr>
+<tr>
+<td>MARK</td>
+</tr>
+<tr>
+<td>DAVID</td>
+</tr>
+<tr>
+<td>KIM</td>
+</tr>
+<tr>
+<td>JAMES</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-LOWER-函数"><a href="#SQLite-LOWER-函数" class="headerlink" title="SQLite LOWER 函数"></a>SQLite LOWER 函数</h3><p>SQLite LOWER 函数把字符串转换为小写字母。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT lower(name) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>lower(name)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>paul</td>
+</tr>
+<tr>
+<td>allen</td>
+</tr>
+<tr>
+<td>teddy</td>
+</tr>
+<tr>
+<td>mark</td>
+</tr>
+<tr>
+<td>david</td>
+</tr>
+<tr>
+<td>kim</td>
+</tr>
+<tr>
+<td>james</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-LENGTH-函数"><a href="#SQLite-LENGTH-函数" class="headerlink" title="SQLite LENGTH 函数"></a>SQLite LENGTH 函数</h3><p>SQLite LENGTH 函数返回字符串的长度。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT name, length(name) FROM COMPANY;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>NAME</th>
+<th>length(name)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Paul</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Allen</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Teddy</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Mark</td>
+<td>4</td>
+</tr>
+<tr>
+<td>David</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Kim</td>
+<td>3</td>
+</tr>
+<tr>
+<td>James</td>
+<td>5</td>
+</tr>
+</tbody></table>
+<h3 id="SQLite-sqlite-version-函数"><a href="#SQLite-sqlite-version-函数" class="headerlink" title="SQLite sqlite_version 函数"></a>SQLite sqlite_version 函数</h3><p>SQLite sqlite_version 函数返回 SQLite 库的版本。下面是实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite&gt; SELECT sqlite_version() AS &#x27;SQLite Version&#x27;;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQLite SQL 语句将产生以下结果：</p>
+<table>
+<thead>
+<tr>
+<th>SQLite Version</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>3.6.20</td>
+</tr>
+</tbody></table>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/17/SQlite/" data-id="clvq0zjc1000a7qqtgixl8nb5" data-title="SQLite" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/http-www-runoob-com-sqlite/" rel="tag">http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/05/23/SQLite%20-%20C:C++/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Neuer</strong>
+      <div class="article-nav-title">
+        
+          SQLite - C/C++
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/05/13/Shell%E8%84%9A%E6%9C%AC/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Älter</strong>
+      <div class="article-nav-title">Shell脚本</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/http-www-runoob-com-sqlite/" rel="tag">http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rn/" rel="tag">rn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" rel="tag">runtime track 埋点</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shadowsocks/" rel="tag">shadowsocks</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webpack/" rel="tag">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/weex/" rel="tag">weex</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/http-www-runoob-com-sqlite/" style="font-size: 10px;">http://www.runoob.com/sqlite/</a> <a href="/tags/rn/" style="font-size: 10px;">rn</a> <a href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" style="font-size: 10px;">runtime track 埋点</a> <a href="/tags/shadowsocks/" style="font-size: 10px;">shadowsocks</a> <a href="/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/tags/weex/" style="font-size: 10px;">weex</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/02/">February 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/09/">September 2017</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">letzter Beitrag</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/">NSArrary强引用问题</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/27/iOS%E5%90%AF%E5%8A%A8%E8%A7%A3%E6%9E%90/">iOS启动解析</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/07/NSNull%E5%AF%BC%E8%87%B4%E7%9A%84%E6%80%A7%E8%83%BD%E4%B8%8B%E9%99%8D/">NSNull导致的性能下降</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/">LeetCode</a>
+          </li>
+        
+          <li>
+            <a href="/2018/05/23/SQLite%20-%20C:C++/">SQLite - C/C++</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2024 chdo002<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

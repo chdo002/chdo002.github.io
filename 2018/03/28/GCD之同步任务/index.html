@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>GCD之同步任务 | blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="平时没有怎么用的概念，但是很重要，这里记一下 怎么让线程同步Dispatch Group需要在大量任务都执行完成后，执行其他任务，可以用 Dispatch Group 12345678910111213141516171819202122232425&#x2F;&#x2F; 可以理解为一个任务组，组内的任务完成后就会调用dispatch_group_notifydispatch_group_t group &#x3D; dis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GCD之同步任务">
+<meta property="og:url" content="http://example.com/2018/03/28/GCD%E4%B9%8B%E5%90%8C%E6%AD%A5%E4%BB%BB%E5%8A%A1/index.html">
+<meta property="og:site_name" content="blog">
+<meta property="og:description" content="平时没有怎么用的概念，但是很重要，这里记一下 怎么让线程同步Dispatch Group需要在大量任务都执行完成后，执行其他任务，可以用 Dispatch Group 12345678910111213141516171819202122232425&#x2F;&#x2F; 可以理解为一个任务组，组内的任务完成后就会调用dispatch_group_notifydispatch_group_t group &#x3D; dis">
+<meta property="og:locale">
+<meta property="og:image" content="https://coding.net/u/chdo/p/CDResource/git/raw/master/20150726170216381.png">
+<meta property="article:published_time" content="2018-03-28T09:31:01.000Z">
+<meta property="article:modified_time" content="2024-05-02T03:28:47.402Z">
+<meta property="article:author" content="chdo002">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://coding.net/u/chdo/p/CDResource/git/raw/master/20150726170216381.png">
+  
+    <link rel="alternate" href="/atom.xml" title="blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<meta name="generator" content="Hexo 7.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Suche"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Suche"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-GCD之同步任务" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/03/28/GCD%E4%B9%8B%E5%90%8C%E6%AD%A5%E4%BB%BB%E5%8A%A1/" class="article-date">
+  <time class="dt-published" datetime="2018-03-28T09:31:01.000Z" itemprop="datePublished">2018-03-28</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      GCD之同步任务
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>平时没有怎么用的概念，但是很重要，这里记一下</p>
+<h1 id="怎么让线程同步"><a href="#怎么让线程同步" class="headerlink" title="怎么让线程同步"></a>怎么让线程同步</h1><h2 id="Dispatch-Group"><a href="#Dispatch-Group" class="headerlink" title="Dispatch Group"></a>Dispatch Group</h2><p>需要在大量任务都执行完成后，执行其他任务，可以用 Dispatch Group</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">// 可以理解为一个任务组，组内的任务完成后就会调用dispatch_group_notify</span><br><span class="line">dispatch_group_t group = dispatch_group_create();</span><br><span class="line">dispatch_queue_t queue = dispatch_get_global_queue(0, 0);</span><br><span class="line"></span><br><span class="line">dispatch_group_async(group, queue, ^&#123;</span><br><span class="line">    for (int i = 0; i &lt; 1000; i++) &#123;</span><br><span class="line">    if (i == 999) &#123;</span><br><span class="line">        NSLog(@&quot;11111111&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">dispatch_group_async(group, queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;22222222&quot;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">dispatch_group_async(group, queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;33333333&quot;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">dispatch_group_notify(group, queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;done&quot;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="2018年4月18日更新"><a href="#2018年4月18日更新" class="headerlink" title="2018年4月18日更新"></a>2018年4月18日更新</h3><p>对于网络请求这种异步任务，还需要使用 dispatch_group_enter和dispatch_group_leave,来手动处理下，先上代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">dispatch_group_t group = dispatch_group_create();</span><br><span class="line">dispatch_queue_t queue = dispatch_get_global_queue(0, 0);</span><br><span class="line"></span><br><span class="line">dispatch_group_enter(group);</span><br><span class="line">dispatch_async(queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;任务1开始&quot;);</span><br><span class="line">    sleep(2);</span><br><span class="line">    NSLog(@&quot;任务1结束&quot;);</span><br><span class="line">    dispatch_group_leave(group);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">dispatch_group_enter(group);</span><br><span class="line">dispatch_async(queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;任务2开始&quot;);</span><br><span class="line">    sleep(1);</span><br><span class="line">    NSLog(@&quot;任务2结束&quot;);</span><br><span class="line">    dispatch_group_leave(group);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">dispatch_group_notify(group, queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;完成了&quot;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+
+<p>输出为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">17:31:39.314251+0800 testP[29849:2247791] 任务2开始</span><br><span class="line">17:31:39.314251+0800 testP[29849:2247785] 任务1开始</span><br><span class="line">17:31:40.317949+0800 testP[29849:2247791] 任务2结束</span><br><span class="line">17:31:41.318231+0800 testP[29849:2247785] 任务1结束</span><br><span class="line">17:31:41.318588+0800 testP[29849:2247785] 完成了</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>可以看到任务1和任务2同时执行，因为任务1耗时2秒，所以在任务2后1秒完成，然后发出通知，</p>
+<p>dispatch_group_enter和dispatch_group_leave总是成对出现，不然可能导致group没有被释放，从而没有notify；或者group提前释放，导致EXC_BAD_INSTRUCTION,group提前释放</p>
+<p>dispatch_group_enter和dispatch_group_leave可以理解为给group添加手动计数，dispatch_group_enter会给group加1，dispatch_group_leave就是减一，group初始计数为0。</p>
+<p>当group初始计数为0时，就会执行notify通知，比如如下代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">dispatch_group_t group = dispatch_group_create();</span><br><span class="line">dispatch_queue_t queue = dispatch_get_global_queue(0, 0);</span><br><span class="line"></span><br><span class="line">dispatch_group_notify(group, queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;完成了&quot;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">dispatch_group_enter(group);</span><br><span class="line">dispatch_async(queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;任务1开始&quot;);</span><br><span class="line">    sleep(2);</span><br><span class="line">    NSLog(@&quot;任务1结束&quot;);</span><br><span class="line">    dispatch_group_leave(group);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">dispatch_group_enter(group);</span><br><span class="line">dispatch_async(queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;任务2开始&quot;);</span><br><span class="line">    sleep(1);</span><br><span class="line">    NSLog(@&quot;任务2结束&quot;);</span><br><span class="line">    dispatch_group_leave(group);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>输出为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">17:45:46.296758+0800 testP[30209:2259157] 任务2开始</span><br><span class="line">17:45:46.296758+0800 testP[30209:2259158] 任务1开始</span><br><span class="line">17:45:46.296766+0800 testP[30209:2259150] 完成了</span><br><span class="line">17:45:47.301499+0800 testP[30209:2259157] 任务2结束</span><br><span class="line">17:45:48.299812+0800 testP[30209:2259158] 任务1结束</span><br></pre></td></tr></table></figure>
+
+<p>将dispatch_group_notify移到最前，就不会在group完成后得到notify，而是提前执行了</p>
+<h2 id="dispatch-barrier-sync-和-dispatch-barrier-async"><a href="#dispatch-barrier-sync-和-dispatch-barrier-async" class="headerlink" title="dispatch_barrier_sync 和 dispatch_barrier_async"></a>dispatch_barrier_sync 和 dispatch_barrier_async</h2><p><img src="https://coding.net/u/chdo/p/CDResource/git/raw/master/20150726170216381.png" alt="网上找到的"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">dispatch_async(queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;1&quot;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">dispatch_async(queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;2&quot;);</span><br><span class="line">&#125;);</span><br><span class="line">dispatch_async(queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;3&quot;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">// dispatch_barrier_sync 这个和  dispatch_async与dispatch_sync之间的区别类似</span><br><span class="line">dispatch_barrier_async(queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;000000&quot;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">dispatch_async(queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;4&quot;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">dispatch_async(queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;5&quot;);</span><br><span class="line">&#125;);</span><br><span class="line">dispatch_async(queue, ^&#123;</span><br><span class="line">    NSLog(@&quot;6&quot;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<h2 id="dispatch-semaphore"><a href="#dispatch-semaphore" class="headerlink" title="dispatch_semaphore"></a>dispatch_semaphore</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1、dispatch_semaphore_create 创建一个semaphore  就是创建一个全局的变量，小于0时会阻塞当前线程</span><br><span class="line">2、dispatch_semaphore_signal 发送一个信号       给信号量加1</span><br><span class="line">3、dispatch_semaphore_wait 等待信号   给信号量减1</span><br></pre></td></tr></table></figure>
+<p>这个东西本质是就是立flag，让flag小于0，线程就阻塞了，只有让flag大于0，才能继续</p>
+<p>网上的说明例子</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">// 创建队列组</span><br><span class="line">dispatch_group_t group = dispatch_group_create();</span><br><span class="line">// 创建信号量，并且设置值为10</span><br><span class="line">dispatch_semaphore_t semaphore = dispatch_semaphore_create(10);</span><br><span class="line">dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);</span><br><span class="line">for (int i = 0; i &lt; 100; i++)&#123;</span><br><span class="line">/*</span><br><span class="line"> *  由于是异步执行的，所以每次循环Block里面的dispatch_semaphore_signal根本还没有执行就会执行dispatch_semaphore_wait，</span><br><span class="line"> *  从而semaphore-1.当循环10此后，semaphore等于0，则会阻塞线程，直到执行了Block的dispatch_semaphore_signal 才会继续执行</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);</span><br><span class="line">    dispatch_group_async(group, queue, ^&#123;</span><br><span class="line">        NSLog(@&quot;%i&quot;,i);</span><br><span class="line">        sleep(2);</span><br><span class="line">        // 每次发送信号则semaphore会+1，</span><br><span class="line">        dispatch_semaphore_signal(semaphore);</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>应用1 网络请求</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">_block BOOL isok = NO;</span><br><span class="line"></span><br><span class="line">dispatch_semaphore_t sema = dispatch_semaphore_create(0);</span><br><span class="line">Engine *engine = [[Engine alloc] init];</span><br><span class="line">[engine queryCompletion:^(BOOL isOpen) &#123;</span><br><span class="line">    isok = isOpen;</span><br><span class="line">    dispatch_semaphore_signal(sema);</span><br><span class="line">&#125; onError:^(int errorCode, NSString *errorMessage) &#123;</span><br><span class="line">    isok = NO;</span><br><span class="line">    dispatch_semaphore_signal(sema);</span><br><span class="line">&#125;];</span><br><span class="line">dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);</span><br><span class="line">// todo what you want to do after net callback</span><br></pre></td></tr></table></figure>
+
+<p>应用2  获取权限</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">//创建通讯簿的引用</span><br><span class="line">addBook=ABAddressBookCreateWithOptions(NULL, NULL);</span><br><span class="line">//创建一个出事信号量为0的信号</span><br><span class="line">dispatch_semaphore_t sema=dispatch_semaphore_create(0);</span><br><span class="line">//申请访问权限</span><br><span class="line">ABAddressBookRequestAccessWithCompletion(addBook, ^(bool greanted, CFErrorRef error)</span><br><span class="line">&#123;</span><br><span class="line">    //greanted为YES是表示用户允许，否则为不允许</span><br><span class="line">    if (!greanted) &#123;</span><br><span class="line">        tip=1;</span><br><span class="line">    &#125;</span><br><span class="line">    //发送一次信号</span><br><span class="line">    dispatch_semaphore_signal(sema);</span><br><span class="line"></span><br><span class="line">&#125;);</span><br><span class="line">//等待信号触发</span><br><span class="line">dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/03/28/GCD%E4%B9%8B%E5%90%8C%E6%AD%A5%E4%BB%BB%E5%8A%A1/" data-id="clvq0zjbw00047qqthibd6s5c" data-title="GCD之同步任务" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/04/12/%E6%8F%92%E4%BB%B6/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Neuer</strong>
+      <div class="article-nav-title">
+        
+          chrome插件
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/03/26/CDChatList/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Älter</strong>
+      <div class="article-nav-title">CDChatList</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/http-www-runoob-com-sqlite/" rel="tag">http:&#x2F;&#x2F;www.runoob.com&#x2F;sqlite&#x2F;</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rn/" rel="tag">rn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" rel="tag">runtime track 埋点</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shadowsocks/" rel="tag">shadowsocks</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webpack/" rel="tag">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/weex/" rel="tag">weex</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/http-www-runoob-com-sqlite/" style="font-size: 10px;">http://www.runoob.com/sqlite/</a> <a href="/tags/rn/" style="font-size: 10px;">rn</a> <a href="/tags/runtime-track-%E5%9F%8B%E7%82%B9/" style="font-size: 10px;">runtime track 埋点</a> <a href="/tags/shadowsocks/" style="font-size: 10px;">shadowsocks</a> <a href="/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/tags/weex/" style="font-size: 10px;">weex</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/02/">February 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/09/">September 2017</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">letzter Beitrag</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/02/15/NSArrary%E5%BC%BA%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98/">NSArrary强引用问题</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/27/iOS%E5%90%AF%E5%8A%A8%E8%A7%A3%E6%9E%90/">iOS启动解析</a>
+          </li>
+        
+          <li>
+            <a href="/2018/08/07/NSNull%E5%AF%BC%E8%87%B4%E7%9A%84%E6%80%A7%E8%83%BD%E4%B8%8B%E9%99%8D/">NSNull导致的性能下降</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/17/%E7%AE%97%E6%B3%95%E7%9B%B8%E5%85%B3/">LeetCode</a>
+          </li>
+        
+          <li>
+            <a href="/2018/05/23/SQLite%20-%20C:C++/">SQLite - C/C++</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2024 chdo002<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
